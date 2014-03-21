@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>910</width>
-    <height>586</height>
+    <width>920</width>
+    <height>624</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -205,6 +205,9 @@
           </item>
           <item>
            <widget class="QSpinBox" name="repetitions">
+            <property name="buttonSymbols">
+             <enum>QAbstractSpinBox::PlusMinus</enum>
+            </property>
             <property name="minimum">
              <number>1</number>
             </property>
@@ -220,34 +223,654 @@
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
-      <item>
-       <widget class="QTableWidget" name="sensors">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>450</width>
-          <height>0</height>
-         </size>
-        </property>
-       </widget>
-      </item>
-      <item>
-       <widget class="QwtPlot" name="qwtPlot">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-       </widget>
-      </item>
-     </layout>
+     <widget class="QTabWidget" name="tabWidget_2">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="currentIndex">
+       <number>1</number>
+      </property>
+      <widget class="QWidget" name="tab_3">
+       <attribute name="title">
+        <string>Results</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="horizontalLayout_6">
+        <item>
+         <widget class="QTableWidget" name="sensors">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>450</width>
+            <height>0</height>
+           </size>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QwtPlot" name="qwtPlot">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="MinimumExpanding" vsizetype="MinimumExpanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_4">
+       <attribute name="title">
+        <string>Experiments</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <widget class="QGroupBox" name="groupBox">
+          <property name="title">
+           <string>Settings</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_5">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_12">
+             <item>
+              <widget class="QLabel" name="label_13">
+               <property name="text">
+                <string>Title</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="exp_name"/>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <item>
+              <widget class="QLabel" name="label_6">
+               <property name="text">
+                <string>Prepare:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="exp_prepare"/>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_9">
+             <item>
+              <widget class="QLabel" name="label_11">
+               <property name="text">
+                <string>Cleanup:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="exp_cleanup"/>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_10">
+             <item>
+              <widget class="QLabel" name="label_12">
+               <property name="text">
+                <string>Command:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="exp_command"/>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_7">
+             <item>
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>Freqency:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="freq">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <item>
+                <property name="text">
+                 <string>250 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>300 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>350 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>400 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>450 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>500 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>550 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>600 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>800 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>900 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1000 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1100 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1200 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1300 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1400 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1500 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1600 MHz</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_14">
+               <property name="text">
+                <string>Min Freqency:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="freq_min">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <item>
+                <property name="text">
+                 <string>250 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>300 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>350 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>400 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>450 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>500 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>550 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>600 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>800 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>900 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1000 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1100 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1200 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1300 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1400 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1500 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1600 MHz</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_15">
+               <property name="text">
+                <string>Max Freqency:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="freq_max">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <item>
+                <property name="text">
+                 <string>250 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>300 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>350 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>400 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>450 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>500 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>550 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>600 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>800 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>900 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1000 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1100 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1200 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1300 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1400 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1500 MHz</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>1600 MHz</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>Governor:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="freq_gov">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <item>
+                <property name="text">
+                 <string>ondemand</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>interactive</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>conservative</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>userspace</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>powersave</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>performance</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="useBig">
+               <property name="text">
+                <string>Big</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="useLittle">
+               <property name="text">
+                <string>Little</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_13">
+             <item>
+              <widget class="QLabel" name="label_10">
+               <property name="toolTip">
+                <string/>
+               </property>
+               <property name="text">
+                <string>Cooldown:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="cooldown">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>Time after the execution to include in measurement</string>
+               </property>
+               <property name="buttonSymbols">
+                <enum>QAbstractSpinBox::PlusMinus</enum>
+               </property>
+               <property name="suffix">
+                <string>s</string>
+               </property>
+               <property name="maximum">
+                <number>600</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_9">
+               <property name="toolTip">
+                <string/>
+               </property>
+               <property name="text">
+                <string>Tailtime:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="tail">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+               <property name="toolTip">
+                <string>Time between measurements to get back to steady state</string>
+               </property>
+               <property name="buttonSymbols">
+                <enum>QAbstractSpinBox::PlusMinus</enum>
+               </property>
+               <property name="suffix">
+                <string>s</string>
+               </property>
+               <property name="maximum">
+                <number>600</number>
+               </property>
+               <property name="value">
+                <number>60</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_2">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_8">
+             <item>
+              <widget class="QPushButton" name="addExperiment">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>Add</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="updateExperiment">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>Update</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="removeExperiment">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>Remove</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QListWidget" name="listWidget"/>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_11">
+          <item>
+           <widget class="QPushButton" name="runAll">
+            <property name="text">
+             <string>Run all</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="runSelected">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Run selected</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </widget>
     </item>
    </layout>
   </widget>
@@ -256,7 +879,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>910</width>
+     <width>920</width>
      <height>20</height>
     </rect>
    </property>
