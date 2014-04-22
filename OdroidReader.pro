@@ -19,12 +19,14 @@ SOURCES += main.cpp\
         odroidreader.cpp \
     ipvalidator.cpp \
     datapoint.cpp \
-    experiment.cpp
+    experiment.cpp \
+    qcustomplot.cpp
 
 HEADERS  += odroidreader.h \
     ipvalidator.h \
     value.h \
     datapoint.h \
-    experiment.h
+    experiment.h \
+    qcustomplot.h
 
 FORMS    += odroidreader.ui

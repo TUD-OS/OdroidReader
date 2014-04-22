@@ -13,6 +13,7 @@ class DatapointBase
 {
 protected:
 	DatapointBase(QByteArray ba);
+	DatapointBase(const DatapointBase& src, float from, float to);
 public:
 	virtual ~DatapointBase();
 	QwtPlotCurve* pc;
@@ -39,9 +40,10 @@ class Datapoint: public DatapointBase
 {
 	Value<T> _value;
 public:
-	Datapoint(QByteArray ba) : DatapointBase(ba), _value(*this) {  }
-	const Value<T> value() { return _value; }
-	void addValue(T v,float time) { _value.add(v,time); }
+	Datapoint(QByteArray ba) : DatapointBase(ba), _value(*this) {}
+	Datapoint(Datapoint<double>& orig,float from, float to) : DatapointBase(orig,from,to), _value(orig._value,from,to) { qDebug() << "CC";}
+	const Value<T> value() const { return _value; }
+	void addValue(T v,double time) { _value.add(v,time); }
 };
 
 #endif // DATAPOINT_H

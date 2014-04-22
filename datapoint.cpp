@@ -28,6 +28,33 @@ DatapointBase::DatapointBase(QByteArray ba)
 	name_item->setBackgroundColor(Qt::yellow);
 }
 
+DatapointBase::DatapointBase(const DatapointBase &src, float from, float to) {
+	_type = src._type;
+	_factor = src._factor;
+	_name = src._name;
+	_unit = src._unit;
+	pc = new QwtPlotCurve(_name);
+	unit_item = new QTableWidgetItem(*src.unit_item);
+	name_item = new QTableWidgetItem(*src.name_item);
+	float min = INFINITY, max = -INFINITY, avg = 0, last = 0;
+	int no = 0;
+	for (QPointF s : src.samples) {
+		if (s.x() >= from and s.x() <= to) {
+			if (min > s.y()) min = s.y();
+			if (max < s.y()) max = s.y();
+			avg += (s.y()-avg)/++no;
+			last = s.y();
+			samples.append(s);
+		}
+	}
+	last_item = new QTableWidgetItem(QString::number(last));
+	min_item = new QTableWidgetItem(QString::number(min));
+	max_item = new QTableWidgetItem(QString::number(max));
+	avg_item = new QTableWidgetItem(QString::number(avg));
+	pc->setSamples(samples);
+	qDebug() << "Constructed" << samples.size() << "samples.";
+}
+
 DatapointBase::~DatapointBase() {
 	delete name_item;
 	delete unit_item;

@@ -7,12 +7,14 @@
 #include <QtNetwork/QTcpSocket>
 #include <QMessageBox>
 #include <QtEndian>
+#include <QTextStream>
 #include <iostream>
 #include <iomanip>
 #include <cassert>
 #include <QColor>
 #include <QList>
 #include <QFile>
+#include "qcustomplot.h"
 #include <QDateTime>
 #include <qwt6/qwt_plot.h>
 
@@ -20,16 +22,39 @@ QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254)
 					  QColor(104,115,15),QColor(133,3,43),QColor(188,186,111),QColor(168,115,19),QColor(63,184,67)});
 QList<QColor> cols;
 
+std::vector<Datapoint<double>*> OdroidReader::descs;
+
 OdroidReader::OdroidReader(QWidget *parent) :
-	QMainWindow(parent),
+	QMainWindow(parent), executed(false), es(ExperimentState::Idle),
 	ui(new Ui::OdroidReader),
-	sock(nullptr), execMode(false)
+	sock(nullptr)
 {
 	ui->setupUi(this);
 	ui->ip->setValidator(new IPValidator());
 	ui->qwtPlot->setAutoReplot(true);
+	ui->sensors->setColumnWidth(0,30);
+//	ui->selectPower->setMu
+
 	connect(&tmr,SIGNAL(timeout()),this,SLOT(sendGet()));
 	connect(ui->sensors,SIGNAL(cellClicked(int,int)),this,SLOT(updateCurve(int,int)));
+	connect(ui->samplingInterval,SIGNAL(valueChanged(int)),this,SLOT(updateInterval(int)));
+	connect(qApp,SIGNAL(aboutToQuit()),this,SLOT(aboutToQuit()));
+
+	//Load state ...
+	QFile f("experiments.exp");
+	if (!f.exists()) return;
+	f.open(QFile::ReadOnly);
+	QTextStream ts(&f);
+	qDebug() << "Reading experiments";
+	while (!ts.atEnd()) {
+		qDebug() << "Reading experiment";
+		experiments.append(Experiment(ts));
+	}
+	updateExperiments();
+}
+
+void OdroidReader::updateInterval(int msec) {
+	tmr.setInterval(msec);
 }
 
 OdroidReader::~OdroidReader()
@@ -43,8 +68,9 @@ void OdroidReader::enableControls() {
 }
 
 void OdroidReader::enableControls(bool status) {
-	ui->tab->setEnabled(status);
-	ui->tab_2->setEnabled(status);
+	ui->connect->setEnabled(status);
+	ui->repetitions->setEnabled(status); //TODO: Must this really be disabled?
+	ui->ip->setEnabled(status);
 }
 
 void OdroidReader::updateCurve(int row, int col) {
@@ -55,13 +81,11 @@ void OdroidReader::updateCurve(int row, int col) {
 			return;
 		}
 
-		const DatapointBase* d = descs.at(row);
+		const Datapoint<double>* d = descs.at(row);
 		QColor color = cols.takeFirst();
 		d->pc->setPen(color,2.0);
 		ui->sensors->item(row,col)->setBackgroundColor(color);
 		d->pc->attach(ui->qwtPlot);
-//		d->pc->setSamples(d->samples);
-//		d->pc->setTitle(d->name());
 		ui->qwtPlot->updateLegend();
 	} else {
 		ui->sensors->item(row,col)->setBackgroundColor(Qt::white);
@@ -81,19 +105,9 @@ void OdroidReader::sendGet() {
 void OdroidReader::updateSensors() {
 	qDebug() << "Updating UI";
 	ui->sensors->clear();
-	ui->sensors->setColumnCount(6);
 	ui->sensors->setRowCount(descs.size());
-	ui->sensors->setSelectionBehavior(QTableView::SelectRows);
-	ui->sensors->setHorizontalHeaderItem(0,new QTableWidgetItem("Show"));
-	ui->sensors->setColumnWidth(0,30);
-	ui->sensors->setHorizontalHeaderItem(1,new QTableWidgetItem("Name"));
-	ui->sensors->setHorizontalHeaderItem(2,new QTableWidgetItem("current"));
-	ui->sensors->setHorizontalHeaderItem(3,new QTableWidgetItem("Min"));
-	ui->sensors->setHorizontalHeaderItem(4,new QTableWidgetItem("Max"));
-	ui->sensors->setHorizontalHeaderItem(5,new QTableWidgetItem("Unit"));
 
 	for (size_t i = 0; i < descs.size(); i++) {
-		//qDebug() << "Adding item " << i;
 		ui->sensors->setItem(i,0,new QTableWidgetItem(""));
 		ui->sensors->item(i,0)->setCheckState(Qt::Unchecked);
 		ui->sensors->setItem(i,1,descs[i]->name_item);
@@ -102,6 +116,15 @@ void OdroidReader::updateSensors() {
 		ui->sensors->setItem(i,4,descs[i]->max_item);
 		ui->sensors->setItem(i,5,descs[i]->unit_item);
 	}
+}
+
+void OdroidReader::runCommand(QString cmd) {
+	assert(sock);
+	qDebug() << "Executing" << cmd;
+	sock->write("EXEC\n");
+	cmd.append("\n");
+	sock->write(cmd.toStdString().c_str());
+	executed = true;
 }
 
 void OdroidReader::connected() {
@@ -118,60 +141,53 @@ void OdroidReader::connected() {
 void OdroidReader::readData() {
 	quint16 got;
 	quint32 val;
-	double time = 0;
 	switch (query) {
 		case Query::GET: //Rework this!
 			if (sock->bytesAvailable() < dsize+8) return;
 			assert(sock->bytesAvailable() == dsize+8);
-			time = qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(sock->read(4).constData()));
-			time += qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(sock->read(4).constData()))/1000000000.0;
+			lastTime = qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(sock->read(4).constData()));
+			lastTime += qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(sock->read(4).constData()))/1000000000.0;
 
 			for (size_t i = 0; i < descs.size(); i++) {
-				DatapointBase* d = const_cast<DatapointBase*>(descs.at(i));
-				Datapoint<quint32> *dp32 = static_cast<Datapoint<quint32>*>(d);
-				Datapoint<float> *dpf = static_cast<Datapoint<float>*>(d);
+				Datapoint<double>* d = const_cast<Datapoint<double>*>(descs.at(i));
 
 				switch (d->type()) {
 				  case FIELD_TYPE::BIGLITTLE:
 				  case FIELD_TYPE::CHAR:
-					dp32->addValue(*reinterpret_cast<const uchar*>(sock->read(1).constData()),time);
+					d->addValue(*reinterpret_cast<const uchar*>(sock->read(1).constData()),lastTime);
 					break;
 				  case FIELD_TYPE::FLOAT:
 					val = qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(sock->read(4).constData()));
-					dpf->addValue(*reinterpret_cast<float*>(&val),time);
+					d->addValue(*reinterpret_cast<float*>(&val),lastTime);
 					break;
 				  case FIELD_TYPE::UINT16T:
-					dp32->addValue(qFromBigEndian<quint16>(reinterpret_cast<const uchar*>(sock->read(2).constData())),time);
+					d->addValue(qFromBigEndian<quint16>(reinterpret_cast<const uchar*>(sock->read(2).constData())),lastTime);
 					break;
 				  case FIELD_TYPE::UINT32T:
-					dp32->addValue(qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(sock->read(4).constData())),time);
+					d->addValue(qFromBigEndian<quint32>(reinterpret_cast<const uchar*>(sock->read(4).constData())),lastTime);
 					break;
 				  default:
 					qDebug() << "Error interpreting data " << i;
 				}
-				if (d->type() != FIELD_TYPE::FLOAT && d->type() != FIELD_TYPE::BIGLITTLE) {
-					ts << dp32->value().last() << ";";
-				} else if (d->type() == FIELD_TYPE::FLOAT) {
-					ts << dpf->value().last() << ";";
-				}
-				if (ui->sensors->item(i,0)->checkState() == Qt::Checked) {
+				if (d->type() != FIELD_TYPE::BIGLITTLE)
+					ts << d->value().last() << ";";
+				if (ui->sensors->item(i,0)->checkState() == Qt::Checked)
 					d->pc->setSamples(d->samples);
-				}
+			}
+			if (es != ExperimentState::Idle && descs.at(1)->value().last() == 0 && executed) {
+				executed = false;
+				qDebug() << "Stepping" << descs.at(1)->value().last() << descs.at(1)->value().changed();
+				if (es == ExperimentState::Execute) {
+					qDebug() << "Cooldown" << experiments.back().cooldown_time*1000;
+					QTimer::singleShot(experiments.back().cooldown_time*1000,this,SLOT(runExperiments())); }
+				else
+					runExperiments();
 			}
 			ts << "\n";
 			ts.flush();
 			query = Query::NONE;
 			if (sock->bytesAvailable() != 0)
 				qDebug() << "Extra Data: " << sock->bytesAvailable();
-			if (execMode
-				&& !static_cast<Datapoint<quint32>*>(const_cast<DatapointBase*>(descs.at(1)))->value().last()
-				&& !stop.isActive()) {
-				connect(&stop,SIGNAL(timeout()),sock,SLOT(disconnectFromHostImplementation()));
-				stop.setInterval(ui->keepTime->value()*1000);
-				stop.setSingleShot(true);
-				stop.start();
-				qDebug() << "Timing out in " << ui->keepTime->value()*1000;
-			}
 			break;
 		case Query::DESC:
 		  {
@@ -198,26 +214,16 @@ void OdroidReader::readData() {
 				ts.flush();
 				qDebug() << "Done reading" << descs.size() << "Descriptors" << "(Data Size:" << dsize << ")";
 				updateSensors();
-				if (execMode) {
-					sock->write("EXEC\n");
-					sock->write(ui->command->text().append("\n").toAscii());
-					sendGet();
-				}
 				tmr.setInterval(ui->samplingInterval->value());
 				tmr.start();
 				return;
 			}
 
 			while (sock->bytesAvailable() >= 9+got) {
-				if (sock->peek(2).constData()[1] == FIELD_TYPE::FLOAT) {
-					descs.push_back(new Datapoint<float>(sock->read(9+got)));
-				} else {
-					descs.push_back(new Datapoint<quint32>(sock->read(9+got)));
-				}
-				if (sock->bytesAvailable() >= 1)
-					got = static_cast<quint8>(sock->peek(1).at(0));
-				else
+				descs.push_back(new Datapoint<double>(sock->read(9+got)));
+				if (sock->bytesAvailable() < 1)
 					break;
+				got = static_cast<quint8>(sock->peek(1).at(0));
 				if (got == 0)
 					readData();
 			}
@@ -235,7 +241,7 @@ void OdroidReader::connerror(QAbstractSocket::SocketError err) {
 			qDebug() << "Closed connection";
 			break;
 		case QAbstractSocket::HostNotFoundError:
-		QMessageBox::information(this, tr("Odroid Reader"),tr("The host was not found. Please check the host name and port settings."));
+			QMessageBox::information(this, tr("Odroid Reader"),tr("The host was not found. Please check the host name and port settings."));
 			break;
 		case QAbstractSocket::ConnectionRefusedError:
 			QMessageBox::information(this, tr("Odroid Reader"),tr("The connection was refused by the peer. Make sure the metrics server is running, and check that the host name and port settings are correct."));
@@ -245,11 +251,12 @@ void OdroidReader::connerror(QAbstractSocket::SocketError err) {
 	}
 	sock->close();
 	ts.flush();
-	ts.device()->close();
-	delete ts.device();
-	ts.setDevice(nullptr);
+	if (ts.device()) {
+		ts.device()->close();
+		delete ts.device();
+		ts.setDevice(nullptr);
+	}
 	ui->connect->setText("Connect");
-	execMode = false;
 	enableControls();
 }
 
@@ -264,7 +271,6 @@ void OdroidReader::on_connect_clicked()
 		delete(sock);
 		ui->connect->setText("Connect");
 		enableControls();
-		execMode = false;
 		sock = nullptr;
 		return;
 	}
@@ -276,13 +282,6 @@ void OdroidReader::on_connect_clicked()
 	sock->connect(sock,SIGNAL(readyRead()),this,SLOT(readData()));
 	sock->connect(sock,SIGNAL(disconnected()),this,SLOT(enableControls()));
 	sock->connectToHost(ui->ip->text(),1234);
-}
-
-void OdroidReader::on_execute_clicked()
-{
-	qDebug() << "Execute ...";
-	execMode = true;
-	on_connect_clicked();
 }
 
 void OdroidReader::on_useBig_toggled(bool)
@@ -346,7 +345,7 @@ void OdroidReader::on_listWidget_itemSelectionChanged()
 	bool canModify = (ui->listWidget->selectedItems().size() != 0);
 	ui->removeExperiment->setEnabled(canModify);
 	ui->updateExperiment->setEnabled(canModify);
-	ui->runSelected->setEnabled(canModify);
+	ui->runSelected->setEnabled(toRun.empty() && sock && sock->isWritable() && canModify);
 	if (!canModify) return;
 	const Experiment& e = experiments.at(ui->listWidget->currentRow());
 	ui->useLittle->setCheckState(Qt::Checked); //We need this! Else we run into the neither nor situation
@@ -359,17 +358,14 @@ void OdroidReader::on_listWidget_itemSelectionChanged()
 	ui->cooldown->setValue(e.cooldown_time);
 	ui->tail->setValue(e.tail_time);
 	for (int i = 0; i < ui->freq->count(); i++)
-		if (ui->freq->currentText() == QString::number(e.freq)+" MHz") {
+		if (ui->freq->itemText(i) == QString::number(e.freq)+" MHz")
 			ui->freq->setCurrentIndex(i);
-		}
 	for (int i = 0; i < ui->freq_max->count(); i++)
-		if (ui->freq_max->currentText() == QString::number(e.freq_max)+" MHz") {
+		if (ui->freq_max->itemText(i) == QString::number(e.freq_max)+" MHz")
 			ui->freq_max->setCurrentIndex(i);
-		}
 	for (int i = 0; i < ui->freq_min->count(); i++)
-		if (ui->freq_min->currentText() == QString::number(e.freq_min)+" MHz") {
+		if (ui->freq_min->itemText(i) == QString::number(e.freq_min)+" MHz")
 			ui->freq_min->setCurrentIndex(i);
-		}
 }
 
 void OdroidReader::on_removeExperiment_clicked()
@@ -384,7 +380,145 @@ void OdroidReader::on_updateExperiment_clicked()
 	on_addExperiment_clicked();
 }
 
+void OdroidReader::runExperiments() {
+	QString cmd;
+	switch (es) {
+		case ExperimentState::Idle:
+			cmd = toRun.back()->prepareMeasurement(lastTime);
+			if (!cmd.isEmpty()) {
+				qDebug() << "Prepare";
+				runCommand(cmd);
+				es = ExperimentState::Prepare;
+				break;
+			}
+		case ExperimentState::Prepare:
+			cmd = toRun.back()->startMeasurement(lastTime);
+			if (!cmd.isEmpty()) {
+				qDebug() << "Start";
+				runCommand(cmd);
+				es = ExperimentState::Execute;
+				break;
+			}
+		case ExperimentState::Execute:
+			cmd = toRun.back()->cleanupMeasurement(lastTime);
+			if (!cmd.isEmpty()) {
+				qDebug() << "Cleanup";
+				runCommand(cmd);
+				es = ExperimentState::Cleanup;
+				break;
+			}
+		case ExperimentState::Cleanup:
+			toRun.back()->finishedCleanup(lastTime);
+			if (++repetition == ui->repetitions->value()) {
+				toRun.pop_back();
+				repetition = 0;
+			}
+			es = ExperimentState::Idle;
+			if (!toRun.empty()) {
+				qDebug() << "Tailtime: " << toRun.back()->tail_time;
+				if (toRun.back()->tail_time != 0)
+					QTimer::singleShot(toRun.back()->tail_time*1000,this,SLOT(runExperiments()));
+				else
+					runExperiments();
+			} else {
+				ui->experiments->setEnabled(true);
+			}
+	}
+}
+
 void OdroidReader::on_runSelected_clicked()
 {
+	if (!sock || !sock->isWritable()) return;
+	toRun.clear();
+	toRun.push_back(&experiments[ui->listWidget->currentRow()]);
+	es = ExperimentState::Idle;
+	ui->experiments->setEnabled(false);
+	repetition = 0;
+	runExperiments();
+}
 
+void OdroidReader::aboutToQuit()
+{
+	//Saving state...
+	QFile f("experiments.exp");
+	f.open(QFile::WriteOnly);
+	QTextStream ts(&f);
+	for (Experiment e : experiments)
+		e.serialize(ts);
+	ts.flush();
+}
+
+
+void OdroidReader::on_listWidget_itemDoubleClicked(QListWidgetItem *item)
+{
+	if (experiments.at(ui->listWidget->row(item)).runs.empty()) {
+		qDebug() << "This experiment has not yet been run!";
+		return;
+	}
+	qDebug() << "We have data from " << experiments.at(ui->listWidget->row(item)).runs.size() << "Runs. Using first";
+	curExp = &experiments.at(ui->listWidget->row(item));
+	ui->runNo->setMaximum(curExp->runs.size()-1);
+	ui->runNo->setValue(0);
+	ui->dispUnit->clear();
+	for (DatapointBase const *p : curExp->runs.front())
+		if (ui->dispUnit->findText(p->unit()) == -1)
+			ui->dispUnit->addItem(p->unit());
+	on_runNo_valueChanged(0);
+	ui->expResult->setCurrentIndex(2);
+}
+
+Q_DECLARE_METATYPE(const Datapoint<double>*)
+
+void OdroidReader::on_runNo_valueChanged(int arg1)
+{
+	int i = 0;
+	QVector<double> ticks;
+	QVector<QString> labels;
+	ui->selectPower->clearPlottables();
+	QBrush boxBrush(QColor(60, 60, 255, 100));
+	boxBrush.setStyle(Qt::Dense6Pattern); // make it look oldschool
+	for (Datapoint<double> const *p : curExp->runs.at(arg1)) {
+		if (p->unit() != ui->dispUnit->currentText()) continue;
+		QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectPower->xAxis,ui->selectPower->yAxis);
+		b->setProperty("Datapoint",QVariant::fromValue(p));
+		b->setBrush(boxBrush);
+		b->setData(i,p->value().min(),p->value().quantile(0.25),p->value().median(),p->value().quantile(0.75),p->value().max());
+		qDebug() << p->name() << "(" << p->value().elements() << ")" << i << p->value().min() << p->value().quantile(0.25) << p->value().median() << p->value().quantile(0.75) << p->value().max();
+		ui->selectPower->addPlottable(b);
+		ticks.append(i);
+		labels.append(p->name());
+		i++;
+	};
+	qDebug() << "Created" << ticks.size();
+	ui->selectPower->xAxis->setSubTickCount(0);
+	ui->selectPower->xAxis->setTickLength(0, 4);
+	ui->selectPower->xAxis->setTickLabelRotation(20);
+	ui->selectPower->xAxis->setAutoTicks(false);
+	ui->selectPower->xAxis->setAutoTickLabels(false);
+	ui->selectPower->xAxis->setTickVector(ticks);
+	ui->selectPower->xAxis->setTickVectorLabels(labels);
+	ui->selectPower->setInteractions(QCP::iMultiSelect | QCP::iSelectPlottables);
+
+	ui->selectPower->xAxis->scaleRange(1.7, ui->selectPower->xAxis->range().center());
+	ui->selectPower->rescaleAxes();
+	connect(ui->selectPower,SIGNAL(selectionChangedByUser()), this, SLOT(updateDetail()));
+	ui->selectPower->replot();
+}
+
+void OdroidReader::updateDetail() {
+	qDebug() << "Updating detail ...";
+	ui->runGraph->detachItems(QwtPlotItem::Rtti_PlotItem,false);
+	int i = 0;
+	for (auto p : ui->selectPower->selectedPlottables()) {
+		const Datapoint<double>* dp = p->property("Datapoint").value<const Datapoint<double>*>();
+		dp->pc->setPen(origcols[i++%origcols.size()]);
+		dp->pc->attach(ui->runGraph);
+
+	}
+	ui->runGraph->replot();
+}
+
+void OdroidReader::on_dispUnit_currentIndexChanged(int index)
+{
+	on_runNo_valueChanged(ui->runNo->value());
 }
