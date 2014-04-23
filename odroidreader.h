@@ -65,6 +65,8 @@ private slots:
   void updateDetail();
   void on_dispUnit_currentIndexChanged(int index);
 
+  void on_aggregate_toggled(bool checked);
+
 private:
   void enableControls(bool status);
   void updateSensors();

@@ -27,6 +27,7 @@ HEADERS  += odroidreader.h \
     value.h \
     datapoint.h \
     experiment.h \
-    qcustomplot.h
+    qcustomplot.h \
+    simplevalue.h
 
 FORMS    += odroidreader.ui

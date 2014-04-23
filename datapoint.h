@@ -13,7 +13,8 @@ class DatapointBase
 {
 protected:
 	DatapointBase(QByteArray ba);
-	DatapointBase(const DatapointBase& src, float from, float to);
+	DatapointBase(const DatapointBase& src, double from, double to);
+	quint32 _factor;
 public:
 	virtual ~DatapointBase();
 	QwtPlotCurve* pc;
@@ -26,7 +27,6 @@ public:
 
 private:
 	FIELD_TYPE _type;
-	quint32 _factor;
 	QString _name;
 	QString _unit; //always 3 chars
 	bool initialized;
@@ -38,11 +38,13 @@ template<class T> class Value;
 template<class T>
 class Datapoint: public DatapointBase
 {
+	Datapoint(const Datapoint& dp) = delete;
+	Datapoint& operator=(const Datapoint& dp) = delete;
 	Value<T> _value;
 public:
-	Datapoint(QByteArray ba) : DatapointBase(ba), _value(*this) {}
-	Datapoint(Datapoint<double>& orig,float from, float to) : DatapointBase(orig,from,to), _value(orig._value,from,to) { qDebug() << "CC";}
-	const Value<T> value() const { return _value; }
+	Datapoint(QByteArray ba) : DatapointBase(ba), _value(*this) { }
+	Datapoint(Datapoint<double>& orig,float from, float to) : DatapointBase(orig,from,to), _value(orig._value,from,to) { }
+	const Value<T>& value() const { return _value; }
 	void addValue(T v,double time) { _value.add(v,time); }
 };
 

@@ -28,7 +28,7 @@ DatapointBase::DatapointBase(QByteArray ba)
 	name_item->setBackgroundColor(Qt::yellow);
 }
 
-DatapointBase::DatapointBase(const DatapointBase &src, float from, float to) {
+DatapointBase::DatapointBase(const DatapointBase &src, double from, double to) {
 	_type = src._type;
 	_factor = src._factor;
 	_name = src._name;
@@ -52,7 +52,6 @@ DatapointBase::DatapointBase(const DatapointBase &src, float from, float to) {
 	max_item = new QTableWidgetItem(QString::number(max));
 	avg_item = new QTableWidgetItem(QString::number(avg));
 	pc->setSamples(samples);
-	qDebug() << "Constructed" << samples.size() << "samples.";
 }
 
 DatapointBase::~DatapointBase() {

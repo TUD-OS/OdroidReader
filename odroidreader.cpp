@@ -12,6 +12,7 @@
 #include <iomanip>
 #include <cassert>
 #include <QColor>
+#include <limits>
 #include <QList>
 #include <QFile>
 #include "qcustomplot.h"
@@ -467,9 +468,9 @@ void OdroidReader::on_listWidget_itemDoubleClicked(QListWidgetItem *item)
 	ui->expResult->setCurrentIndex(2);
 }
 
-Q_DECLARE_METATYPE(const Datapoint<double>*)
+Q_DECLARE_METATYPE(SimpleValue<double>*)
 
-void OdroidReader::on_runNo_valueChanged(int arg1)
+void OdroidReader::on_dispUnit_currentIndexChanged(int)
 {
 	int i = 0;
 	QVector<double> ticks;
@@ -477,19 +478,37 @@ void OdroidReader::on_runNo_valueChanged(int arg1)
 	ui->selectPower->clearPlottables();
 	QBrush boxBrush(QColor(60, 60, 255, 100));
 	boxBrush.setStyle(Qt::Dense6Pattern); // make it look oldschool
-	for (Datapoint<double> const *p : curExp->runs.at(arg1)) {
-		if (p->unit() != ui->dispUnit->currentText()) continue;
+	std::vector<SimpleValue<double>*> vals;
+	if (ui->aggregate->isChecked()) {
+		bool init = true;
+		for (std::vector<Datapoint<double>*> v : curExp->runs) {
+			int i = 0;
+			for (Datapoint<double>* p : v) {
+				if (p->unit() != ui->dispUnit->currentText()) continue;
+				if (init) {
+					vals.push_back(new SimpleValue<double>());
+					labels.push_back(p->name());
+				}
+				vals.at(i++)->add(p->value().avg(),0);
+			}
+			init = false;
+		}
+	} else {
+		for (Datapoint<double> *p : curExp->runs.at(ui->runNo->value())) {
+			if (p->unit() != ui->dispUnit->currentText()) continue;
+			vals.push_back(new SimpleValue<double>(p->value(),0,std::numeric_limits<double>::max()));
+			labels.push_back(p->name());
+		}
+	}
+	for (SimpleValue<double> *p : vals) {
 		QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectPower->xAxis,ui->selectPower->yAxis);
 		b->setProperty("Datapoint",QVariant::fromValue(p));
 		b->setBrush(boxBrush);
-		b->setData(i,p->value().min(),p->value().quantile(0.25),p->value().median(),p->value().quantile(0.75),p->value().max());
-		qDebug() << p->name() << "(" << p->value().elements() << ")" << i << p->value().min() << p->value().quantile(0.25) << p->value().median() << p->value().quantile(0.75) << p->value().max();
+		b->setData(i,p->min(),p->quantile(0.25),p->median(),p->quantile(0.75),p->max());
 		ui->selectPower->addPlottable(b);
 		ticks.append(i);
-		labels.append(p->name());
 		i++;
 	};
-	qDebug() << "Created" << ticks.size();
 	ui->selectPower->xAxis->setSubTickCount(0);
 	ui->selectPower->xAxis->setTickLength(0, 4);
 	ui->selectPower->xAxis->setTickLabelRotation(20);
@@ -506,19 +525,43 @@ void OdroidReader::on_runNo_valueChanged(int arg1)
 }
 
 void OdroidReader::updateDetail() {
-	qDebug() << "Updating detail ...";
-	ui->runGraph->detachItems(QwtPlotItem::Rtti_PlotItem,false);
+	ui->runPlot->clearGraphs();
 	int i = 0;
 	for (auto p : ui->selectPower->selectedPlottables()) {
-		const Datapoint<double>* dp = p->property("Datapoint").value<const Datapoint<double>*>();
-		dp->pc->setPen(origcols[i++%origcols.size()]);
-		dp->pc->attach(ui->runGraph);
-
+		SimpleValue<double>* dp = p->property("Datapoint").value<SimpleValue<double>*>();
+		QCPGraph *g = ui->runPlot->addGraph();
+		g->setPen(origcols[i%origcols.size()]);
+		QVector<double> x,y;
+		double start = dp->values().front().first;
+		for (std::pair<double,double> v : dp->values()) {
+			x.append(v.first-start);
+			y.append(v.second);
+		}
+		g->setData(x,y);
+		p->setSelectedBrush(origcols[i++%origcols.size()]);
 	}
-	ui->runGraph->replot();
+	ui->runPlot->rescaleAxes();
+	ui->runPlot->replot();
 }
 
-void OdroidReader::on_dispUnit_currentIndexChanged(int index)
+void OdroidReader::on_runNo_valueChanged(int index)
 {
-	on_runNo_valueChanged(ui->runNo->value());
+	std::vector<int> selected;
+	for (int i = 0; i < ui->selectPower->plottableCount(); i++) {
+		if (ui->selectPower->plottable(i)->selected()) {
+			selected.push_back(i);
+		}
+	}
+	on_dispUnit_currentIndexChanged(ui->dispUnit->currentIndex());
+	for (int i : selected)
+		ui->selectPower->plottable(i)->setSelected(true);
+	updateDetail();
+	ui->selectPower->replot();
+}
+
+void OdroidReader::on_aggregate_toggled(bool checked)
+{
+	ui->runNo->setEnabled(!checked);
+	on_dispUnit_currentIndexChanged(ui->dispUnit->currentIndex());
+	updateDetail();
 }
