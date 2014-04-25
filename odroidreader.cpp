@@ -119,12 +119,25 @@ void OdroidReader::updateSensors() {
 	}
 }
 
-void OdroidReader::runCommand(QString cmd) {
+void OdroidReader::setupExperiment(Experiment::Run const &run) {
 	assert(sock);
-	qDebug() << "Executing" << cmd;
+	qDebug() << "Setting env ..";
+	sock->write("SETUP\n");
+	QString gov = QString::fromStdString(run.governor);
+	sock->write(gov.append("\n").toStdString().c_str());
+	qDebug() << "Governor is:" << gov;
+	if (gov == "ondemand\n")
+		sock->write(std::to_string(run.freq).append("000\n").c_str());
+	sock->write(std::to_string(run.freq_min).append("000\n").c_str());
+	sock->write(std::to_string(run.freq_max).append("000\n").c_str());
+}
+
+void OdroidReader::runCommand(std::string cmd) {
+	assert(sock);
+	std::cerr << "Executing" << cmd;
 	sock->write("EXEC\n");
 	cmd.append("\n");
-	sock->write(cmd.toStdString().c_str());
+	sock->write(cmd.c_str());
 	executed = true;
 }
 
@@ -303,7 +316,7 @@ quint32 OdroidReader::freq2Int(QString s) {
 void OdroidReader::updateExperiments() {
 	ui->listWidget->clear();
 	for (Experiment& e : experiments) {
-		QListWidgetItem* lwi = new QListWidgetItem(e.title);
+		QListWidgetItem* lwi = new QListWidgetItem(QString::fromStdString(e.title));
 		lwi->setCheckState(Qt::Checked);
 		ui->listWidget->addItem(lwi);
 	}
@@ -311,20 +324,23 @@ void OdroidReader::updateExperiments() {
 
 void OdroidReader::on_addExperiment_clicked()
 {
-	Experiment e;
-	e.big = ui->useBig->isChecked();
-	e.little = ui->useLittle->isChecked();
-	e.title = ui->exp_name->text();
-	e.cleanup = ui->exp_cleanup->text();
-	e.command = ui->exp_command->text();
-	e.prepare = ui->exp_prepare->text();
-	e.cooldown_time = ui->cooldown->value();
-	e.tail_time = ui->tail->value();
-	e.freq = freq2Int(ui->freq->currentText());
-	e.freq_max = freq2Int(ui->freq_max->currentText());
-	e.freq_min = freq2Int(ui->freq_min->currentText());
-	e.governor = ui->freq_gov->currentText();
-	experiments.append(e);
+	Experiment experiment;
+	Experiment::Run run;
+	experiment.title = ui->exp_name->text().toStdString();
+	experiment.cleanup = ui->exp_cleanup->text().toStdString();
+	experiment.command = ui->exp_command->text().toStdString();
+	experiment.prepare = ui->exp_prepare->text().toStdString();
+	experiment.cooldown_time = ui->cooldown->value();
+	experiment.tail_time = ui->tail->value();
+	run.big = ui->useBig->isChecked();
+	run.little = ui->useLittle->isChecked();
+	run.label = "Run 0";
+	run.freq = freq2Int(ui->freq->currentText());
+	run.freq_max = freq2Int(ui->freq_max->currentText());
+	run.freq_min = freq2Int(ui->freq_min->currentText());
+	run.governor = ui->freq_gov->currentText().toStdString();
+	experiment.runs.push_back(run);
+	experiments.append(experiment);
 	ui->addExperiment->setEnabled(false);
 	updateExperiments();
 }
@@ -333,7 +349,7 @@ void OdroidReader::on_exp_name_textChanged(const QString &arg1)
 {
 	if (arg1.isEmpty()) { ui->addExperiment->setEnabled(false); }
 	for (Experiment e : experiments) {
-		if (e.title == arg1) {
+		if (e.title == arg1.toStdString()) {
 			ui->addExperiment->setEnabled(false);
 			return;
 		}
@@ -349,23 +365,24 @@ void OdroidReader::on_listWidget_itemSelectionChanged()
 	ui->runSelected->setEnabled(toRun.empty() && sock && sock->isWritable() && canModify);
 	if (!canModify) return;
 	const Experiment& e = experiments.at(ui->listWidget->currentRow());
+	const Experiment::Run& run = e.runs.back(); //TODO: This should be fixed for run configuration
 	ui->useLittle->setCheckState(Qt::Checked); //We need this! Else we run into the neither nor situation
-	ui->useBig->setCheckState(e.big?Qt::Checked:Qt::Unchecked);
-	ui->useLittle->setCheckState(e.little?Qt::Checked:Qt::Unchecked);
-	ui->exp_name->setText(e.title);
-	ui->exp_cleanup->setText(e.cleanup);
-	ui->exp_command->setText(e.command);
-	ui->exp_prepare->setText(e.prepare);
+	ui->exp_name->setText(QString::fromStdString(e.title));
+	ui->exp_cleanup->setText(QString::fromStdString(e.cleanup));
+	ui->exp_command->setText(QString::fromStdString(e.command));
+	ui->exp_prepare->setText(QString::fromStdString(e.prepare));
 	ui->cooldown->setValue(e.cooldown_time);
 	ui->tail->setValue(e.tail_time);
+	ui->useBig->setCheckState(run.big?Qt::Checked:Qt::Unchecked);
+	ui->useLittle->setCheckState(run.little?Qt::Checked:Qt::Unchecked);
 	for (int i = 0; i < ui->freq->count(); i++)
-		if (ui->freq->itemText(i) == QString::number(e.freq)+" MHz")
+		if (ui->freq->itemText(i) == QString::number(run.freq)+" MHz")
 			ui->freq->setCurrentIndex(i);
 	for (int i = 0; i < ui->freq_max->count(); i++)
-		if (ui->freq_max->itemText(i) == QString::number(e.freq_max)+" MHz")
+		if (ui->freq_max->itemText(i) == QString::number(run.freq_max)+" MHz")
 			ui->freq_max->setCurrentIndex(i);
 	for (int i = 0; i < ui->freq_min->count(); i++)
-		if (ui->freq_min->itemText(i) == QString::number(e.freq_min)+" MHz")
+		if (ui->freq_min->itemText(i) == QString::number(run.freq_min)+" MHz")
 			ui->freq_min->setCurrentIndex(i);
 }
 
@@ -382,19 +399,21 @@ void OdroidReader::on_updateExperiment_clicked()
 }
 
 void OdroidReader::runExperiments() {
-	QString cmd;
+	std::string cmd;
 	switch (es) {
 		case ExperimentState::Idle:
 			cmd = toRun.back()->prepareMeasurement(lastTime);
-			if (!cmd.isEmpty()) {
+			if (cmd.length() > 0) {
 				qDebug() << "Prepare";
 				runCommand(cmd);
 				es = ExperimentState::Prepare;
 				break;
 			}
 		case ExperimentState::Prepare:
-			cmd = toRun.back()->startMeasurement(lastTime);
-			if (!cmd.isEmpty()) {
+			cmd = toRun.back()->startMeasurement(lastTime,0); //TODO
+			if (cmd.length() > 0) {
+				qDebug() << "Configure";
+				setupExperiment(toRun.back()->runs.back());
 				qDebug() << "Start";
 				runCommand(cmd);
 				es = ExperimentState::Execute;
@@ -402,7 +421,7 @@ void OdroidReader::runExperiments() {
 			}
 		case ExperimentState::Execute:
 			cmd = toRun.back()->cleanupMeasurement(lastTime);
-			if (!cmd.isEmpty()) {
+			if (cmd.length() > 0) {
 				qDebug() << "Cleanup";
 				runCommand(cmd);
 				es = ExperimentState::Cleanup;
@@ -461,7 +480,7 @@ void OdroidReader::on_listWidget_itemDoubleClicked(QListWidgetItem *item)
 	ui->runNo->setMaximum(curExp->runs.size()-1);
 	ui->runNo->setValue(0);
 	ui->dispUnit->clear();
-	for (DatapointBase const *p : curExp->runs.front())
+	for (DatapointBase const *p : descs)
 		if (ui->dispUnit->findText(p->unit()) == -1)
 			ui->dispUnit->addItem(p->unit());
 	on_runNo_valueChanged(0);
@@ -472,79 +491,116 @@ Q_DECLARE_METATYPE(SimpleValue<double>*)
 
 void OdroidReader::on_dispUnit_currentIndexChanged(int)
 {
-	int i = 0;
 	QVector<double> ticks;
-	QVector<QString> labels;
 	ui->selectPower->clearPlottables();
 	QBrush boxBrush(QColor(60, 60, 255, 100));
 	boxBrush.setStyle(Qt::Dense6Pattern); // make it look oldschool
 	std::vector<SimpleValue<double>*> vals;
+	std::vector<int> dpId;
+	QVector<QString> labels;
 	if (ui->aggregate->isChecked()) {
-		bool init = true;
-		for (std::vector<Datapoint<double>*> v : curExp->runs) {
-			int i = 0;
-			for (Datapoint<double>* p : v) {
-				if (p->unit() != ui->dispUnit->currentText()) continue;
-				if (init) {
-					vals.push_back(new SimpleValue<double>());
-					labels.push_back(p->name());
-				}
-				vals.at(i++)->add(p->value().avg(),0);
-			}
-			init = false;
-		}
+//		bool init = true;
+		//TODO: Aggregate is disabled for now!
+//		for (std::vector<Datapoint<double>*> v : curExp->runs.front().repetitions.data) {
+//			int i = 0;
+//			int idx = 0;
+//			for (Datapoint<double>* p : v) {
+//				idx++;
+//				if (p->unit() != ui->dispUnit->currentText()) continue;
+//				if (init) {
+//					vals.push_back(new SimpleValue<double>());
+//					labels.push_back(p->name());
+//					dpId.push_back(idx-1);
+//				}
+//				vals.at(i++)->add(p->value().avg(),0);
+//			}
+//			init = false;
+//		}
 	} else {
-		for (Datapoint<double> *p : curExp->runs.at(ui->runNo->value())) {
+		std::pair<double,double> pair = curExp->runs.front().repetitions.at(ui->runNo->value());
+		for (Datapoint<double>* p : descs) {
 			if (p->unit() != ui->dispUnit->currentText()) continue;
-			vals.push_back(new SimpleValue<double>(p->value(),0,std::numeric_limits<double>::max()));
+			vals.push_back(new SimpleValue<double>(p->value(),pair.first,pair.second));
 			labels.push_back(p->name());
 		}
 	}
+	int i = 0;
 	for (SimpleValue<double> *p : vals) {
 		QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectPower->xAxis,ui->selectPower->yAxis);
 		b->setProperty("Datapoint",QVariant::fromValue(p));
+		if (ui->aggregate->isChecked())
+			b->setProperty("DP_ID",QVariant(dpId.at(i)));
 		b->setBrush(boxBrush);
 		b->setData(i,p->min(),p->quantile(0.25),p->median(),p->quantile(0.75),p->max());
 		ui->selectPower->addPlottable(b);
-		ticks.append(i);
-		i++;
+		ticks.append(i++);
 	};
 	ui->selectPower->xAxis->setSubTickCount(0);
 	ui->selectPower->xAxis->setTickLength(0, 4);
-	ui->selectPower->xAxis->setTickLabelRotation(20);
+	ui->selectPower->xAxis->setTickLabelRotation(40);
 	ui->selectPower->xAxis->setAutoTicks(false);
 	ui->selectPower->xAxis->setAutoTickLabels(false);
 	ui->selectPower->xAxis->setTickVector(ticks);
 	ui->selectPower->xAxis->setTickVectorLabels(labels);
 	ui->selectPower->setInteractions(QCP::iMultiSelect | QCP::iSelectPlottables);
 
-	ui->selectPower->xAxis->scaleRange(1.7, ui->selectPower->xAxis->range().center());
 	ui->selectPower->rescaleAxes();
+	ui->selectPower->xAxis->scaleRange(1.1, ui->selectPower->xAxis->range().center());
 	connect(ui->selectPower,SIGNAL(selectionChangedByUser()), this, SLOT(updateDetail()));
+	if (ui->axisFromZero->isChecked())
+		ui->selectPower->yAxis->setRangeLower(0);
 	ui->selectPower->replot();
 }
 
 void OdroidReader::updateDetail() {
-	ui->runPlot->clearGraphs();
+	ui->runPlot->clearPlottables();
 	int i = 0;
 	for (auto p : ui->selectPower->selectedPlottables()) {
-		SimpleValue<double>* dp = p->property("Datapoint").value<SimpleValue<double>*>();
-		QCPGraph *g = ui->runPlot->addGraph();
-		g->setPen(origcols[i%origcols.size()]);
-		QVector<double> x,y;
-		double start = dp->values().front().first;
-		for (std::pair<double,double> v : dp->values()) {
-			x.append(v.first-start);
-			y.append(v.second);
+		if (ui->aggregate->isChecked()) {
+//			QVector<double> ticks;
+//			QVector<QString> labels;
+//			int x = p->property("DP_ID").value<int>();
+//			int i = 0;
+//			for (std::vector<Datapoint<double>*> v : curExp->runs.front().data) {
+//				const Value<double> &p = v.at(x)->value();
+//				QCPStatisticalBox* b = new QCPStatisticalBox(ui->runPlot->xAxis,ui->runPlot->yAxis);
+//				b->setData(i,p.min(),p.quantile(0.25),p.median(),p.quantile(0.75),p.max());
+//				ui->runPlot->addPlottable(b);
+//				labels.append(QString("Run %1").arg(i+1));
+//				ticks.append(i++);
+//			}
+//			ui->runPlot->xAxis->setTickVector(ticks);
+//			ui->runPlot->xAxis->setTickVectorLabels(labels);
+//			ui->runPlot->xAxis->setAutoTicks(false);
+//			ui->runPlot->xAxis->setAutoTickLabels(false);
+//			ui->runPlot->setInteractions(0);
+			//Disabled for now! TODO
+		} else {
+			ui->runPlot->xAxis->setAutoTicks(true);
+			ui->runPlot->xAxis->setAutoTickLabels(true);
+			ui->runPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+			SimpleValue<double>* dp = p->property("Datapoint").value<SimpleValue<double>*>();
+			QCPGraph *g = ui->runPlot->addGraph();
+			g->setPen(origcols[i%origcols.size()]);
+			QVector<double> x,y;
+			double start = dp->values().front().first;
+			for (std::pair<double,double> v : dp->values()) {
+				x.append(v.first-start);
+				y.append(v.second);
+			}
+			g->setData(x,y);
+			p->setSelectedBrush(origcols[i++%origcols.size()]);
 		}
-		g->setData(x,y);
-		p->setSelectedBrush(origcols[i++%origcols.size()]);
 	}
 	ui->runPlot->rescaleAxes();
+	if (ui->aggregate->isChecked())
+		ui->runPlot->xAxis->scaleRange(1.1, ui->selectPower->xAxis->range().center());
+	if (ui->axisFromZero->isChecked())
+		ui->runPlot->yAxis->setRangeLower(0);
 	ui->runPlot->replot();
 }
 
-void OdroidReader::on_runNo_valueChanged(int index)
+void OdroidReader::on_runNo_valueChanged(int)
 {
 	std::vector<int> selected;
 	for (int i = 0; i < ui->selectPower->plottableCount(); i++) {
@@ -562,6 +618,16 @@ void OdroidReader::on_runNo_valueChanged(int index)
 void OdroidReader::on_aggregate_toggled(bool checked)
 {
 	ui->runNo->setEnabled(!checked);
+	if (checked) {
+		ui->selectPower->setInteraction(QCP::iSelectPlottables);
+	} else {
+		ui->selectPower->setInteractions(QCP::iSelectPlottables | QCP::iMultiSelect);
+	}
 	on_dispUnit_currentIndexChanged(ui->dispUnit->currentIndex());
 	updateDetail();
+}
+
+void OdroidReader::on_axisFromZero_toggled(bool)
+{
+	on_runNo_valueChanged(ui->runNo->value());
 }

@@ -1,52 +1,54 @@
 #include "experiment.h"
+#include <iostream>
 #include "odroidreader.h"
 
 Experiment::Experiment()
 {}
 
 Experiment::Experiment(QTextStream& state) {
-	title = state.readLine();
-	big = state.readLine().toInt();
-	little = state.readLine().toInt();;
-	prepare = state.readLine();
-	cleanup = state.readLine();
-	command = state.readLine();
-	freq = state.readLine().toInt();;
-	freq_max = state.readLine().toInt();
-	freq_min = state.readLine().toInt();
-	governor = state.readLine();
+	qDebug() << "Constructor!";
+	title = state.readLine().toStdString();
+	runs.push_back(Experiment::Run()); //TODO! This needs to be read
+	runs.front().big = state.readLine().toInt(); //TODO: This needs to be fixed for multi-run support
+	runs.front().little = state.readLine().toInt();;
+	prepare = state.readLine().toStdString();
+	cleanup = state.readLine().toStdString();
+	command = state.readLine().toStdString();
+	runs.front().freq = state.readLine().toInt();;
+	runs.front().freq_max = state.readLine().toInt();
+	runs.front().freq_min = state.readLine().toInt();
+	runs.front().governor = state.readLine().toStdString();
 	cooldown_time = state.readLine().toInt();
 	tail_time = state.readLine().toInt();
-	qDebug() << "Read:" << title << "|" << big << "|" << little << "|" << prepare << "|" << cleanup << "|" << command << "|" << freq << "|" << freq_max << "|" << freq_min << "|" << governor;
+	std::cerr << "Read: " << title << " | " << runs.front().big << " | " << runs.front().little << " | " << prepare << " | " << cleanup << " | " << command << " | "
+			 << runs.front().freq << " | " << runs.front().freq_max << " | " << runs.front().freq_min << " | " << runs.front().governor;
 }
 
 void Experiment::serialize(QTextStream& ts) {
-	ts << title << "\n";
-	ts << (int)big << "\n";
-	ts << (int)little << "\n";
-	ts << prepare << "\n" << cleanup << "\n" << command << "\n";
-	ts << freq << "\n" << freq_max << "\n" << freq_min << "\n";
-	ts << governor << "\n";
+	ts << QString::fromStdString(title) << "\n";
+	ts << (int)runs.front().big << "\n"; //TODO!
+	ts << (int)runs.front().little << "\n"; //TODO!
+	ts << QString::fromStdString(prepare) << "\n" << QString::fromStdString(cleanup) << "\n" << QString::fromStdString(command) << "\n";
+	ts << runs.front().freq << "\n" << runs.front().freq_max << "\n" << runs.front().freq_min << "\n"; //TODO
+	ts << QString::fromStdString(runs.front().governor) << "\n";
 	ts << cooldown_time << "\n";
 	ts << tail_time << "\n";
-	qDebug() << "Wrote:" << title << "|" << big << "|" << little << "|" << prepare << "|" << cleanup << "|" << command << "|" << freq << "|" << freq_max << "|" << freq_min << "|" << governor;
+	std::cerr << "Wrote: " << title << " | " << runs.front().big << " | " << runs.front().little << " | " << prepare << " | " << cleanup << " | " << command << " | "
+			  << runs.front().freq << "|" << runs.front().freq_max << "|" << runs.front().freq_min << "|" << runs.front().governor;
 }
 
-QString Experiment::prepareMeasurement(float) {
+std::string Experiment::prepareMeasurement(float) {
 	return prepare;
 }
 
-QString Experiment::startMeasurement(float time) {
-	start = time;
-	runs.push_back(std::vector<Datapoint<double>*>());
+std::string Experiment::startMeasurement(double time,int run) {
+	currentRun = run;
+	runs.at(run).repetitions.push_back(std::pair<double,double>(time,time));
 	return command;
 }
 
-QString Experiment::cleanupMeasurement(float time) {
-	end = time;
-	for (Datapoint<double>* d : OdroidReader::descs) {
-		runs.back().push_back(new Datapoint<double>(*d,start,end));
-	}
+std::string Experiment::cleanupMeasurement(float time) {
+	runs.at(currentRun).repetitions.back().second = time;
 	return cleanup;
 }
 

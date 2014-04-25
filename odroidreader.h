@@ -63,15 +63,17 @@ private slots:
   void on_runNo_valueChanged(int arg1);
   void updateInterval(int msec);
   void updateDetail();
-  void on_dispUnit_currentIndexChanged(int index);
+  void on_dispUnit_currentIndexChanged(int);
 
   void on_aggregate_toggled(bool checked);
+  void on_axisFromZero_toggled(bool checked);
 
 private:
   void enableControls(bool status);
   void updateSensors();
   void updateExperiments();
-  void runCommand(QString cmd);
+  void setupExperiment(const Experiment::Run &run);
+  void runCommand(std::string cmd);
   double lastTime;
   int repetition;
   bool executed;

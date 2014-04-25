@@ -141,7 +141,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="overview">
        <attribute name="title">
@@ -866,6 +866,13 @@
              <widget class="QCheckBox" name="aggregate">
               <property name="text">
                <string>Aggregate Averages of Runs</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="axisFromZero">
+              <property name="text">
+               <string>Start Axes at 0</string>
               </property>
              </widget>
             </item>

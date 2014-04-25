@@ -24,7 +24,6 @@ public:
 	Value(Value const& orig, double from, double to) : SimpleValue<T>(orig,from,to), parent(orig.parent) {}
 
 	void add(T value, double time) {
-		value *= parent.factor();
 		parent.samples.append(QPointF(time,value));
 		parent.pc->setSamples(parent.samples);
 		if (_values.empty()) {
@@ -37,16 +36,14 @@ public:
 		_values.push_back(std::pair<double,T>(time,value));
 		auto low = std::lower_bound(_sorted.begin(),_sorted.end(),value);
 		_sorted.insert(low,value);
-		if (value > _max) {
+		if (value == _max) {
 			if (_max == _min) clearColors();
 			parent.last_item->setBackgroundColor(Qt::red);
-			_max = value;
 			parent.max_item->setText(QString::number(value));
 		}
-		if (value < _min) {
+		if (value == _min) {
 			if (_max == _min) clearColors();
 			parent.last_item->setBackgroundColor(Qt::green);
-			_min = value;
 			parent.min_item->setText(QString::number(value));
 		}
 		//Knuth/Wellford Algorithm

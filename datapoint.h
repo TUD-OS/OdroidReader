@@ -45,7 +45,7 @@ public:
 	Datapoint(QByteArray ba) : DatapointBase(ba), _value(*this) { }
 	Datapoint(Datapoint<double>& orig,float from, float to) : DatapointBase(orig,from,to), _value(orig._value,from,to) { }
 	const Value<T>& value() const { return _value; }
-	void addValue(T v,double time) { _value.add(v,time); }
+	void addValue(T v,double time) { qDebug() << "Scale " << v <<  unit() << "with" << _factor; _value.add(v*_factor,time); }
 };
 
 #endif // DATAPOINT_H
