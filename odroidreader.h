@@ -10,10 +10,9 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <QtNetwork/QTcpSocket>
-#include <qwt6/qwt_plot_curve.h>
-#include <qwt6/qwt_color_map.h>
 #include "datapoint.h"
 #include "qcustomplot.h"
+#include <QtEndian>
 #include <QListWidgetItem>
 
 typedef enum class {
@@ -28,6 +27,11 @@ typedef enum class {
 
 namespace Ui {
   class OdroidReader;
+}
+
+template<typename T>
+T networkDecode(QByteArray const &ba) {
+	return qFromBigEndian<T>(reinterpret_cast<const uchar*>(ba.constData()));
 }
 
 class OdroidReader : public QMainWindow
@@ -46,7 +50,6 @@ private slots:
   void updateCurve(int,int);
   void readData();
   void sendGet();
-  void enableControls();
   void on_useBig_toggled(bool checked);
   void on_useLittle_toggled(bool);
   void on_addExperiment_clicked();
@@ -88,10 +91,8 @@ private:
   QTcpSocket *sock;
   Query query;
   QTextStream ts;
-  quint32 dsize;
+  quint32 packetSize;
   QVector<QPointF> samples;
-  QwtLinearColorMap colormap;
-  QwtLegendData legend;
   QVector<Experiment> experiments;
 };
 

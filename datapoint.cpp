@@ -21,37 +21,19 @@ DatapointBase::DatapointBase(QByteArray ba)
 	_unit = QString(ba.constData());
 	initialized = false;
 
-	pc = new QwtPlotCurve(_name);
 	unit_item = new QTableWidgetItem(_unit);
 	unit_item->setBackgroundColor(Qt::yellow);
 	name_item = new QTableWidgetItem(_name);
 	name_item->setBackgroundColor(Qt::yellow);
 }
 
-DatapointBase::DatapointBase(const DatapointBase &src, double from, double to) {
+DatapointBase::DatapointBase(const DatapointBase &src) {
 	_type = src._type;
 	_factor = src._factor;
 	_name = src._name;
 	_unit = src._unit;
-	pc = new QwtPlotCurve(_name);
 	unit_item = new QTableWidgetItem(*src.unit_item);
 	name_item = new QTableWidgetItem(*src.name_item);
-	float min = INFINITY, max = -INFINITY, avg = 0, last = 0;
-	int no = 0;
-	for (QPointF s : src.samples) {
-		if (s.x() >= from and s.x() <= to) {
-			if (min > s.y()) min = s.y();
-			if (max < s.y()) max = s.y();
-			avg += (s.y()-avg)/++no;
-			last = s.y();
-			samples.push_back(s);
-		}
-	}
-	last_item = new QTableWidgetItem(QString::number(last));
-	min_item = new QTableWidgetItem(QString::number(min));
-	max_item = new QTableWidgetItem(QString::number(max));
-	avg_item = new QTableWidgetItem(QString::number(avg));
-	pc->setSamples(QVector<QPointF>::fromStdVector(samples));
 }
 
 DatapointBase::~DatapointBase() {
