@@ -10,7 +10,7 @@ DatapointBase::DatapointBase(QByteArray ba)
 	avg_item = new QTableWidgetItem(*min_item);
 
 	//Initialize from bytearray
-	quint8 name_len = static_cast<quint8>(ba.left(1).constData()[0]);
+	uint8_t name_len = static_cast<quint8>(ba.left(1).constData()[0]);
 	ba.remove(0,1);
 	_type = static_cast<FIELD_TYPE>(ba.left(1).constData()[0]);
 	ba.remove(0,1);
@@ -44,14 +44,14 @@ DatapointBase::DatapointBase(const DatapointBase &src, double from, double to) {
 			if (max < s.y()) max = s.y();
 			avg += (s.y()-avg)/++no;
 			last = s.y();
-			samples.append(s);
+			samples.push_back(s);
 		}
 	}
 	last_item = new QTableWidgetItem(QString::number(last));
 	min_item = new QTableWidgetItem(QString::number(min));
 	max_item = new QTableWidgetItem(QString::number(max));
 	avg_item = new QTableWidgetItem(QString::number(avg));
-	pc->setSamples(samples);
+	pc->setSamples(QVector<QPointF>::fromStdVector(samples));
 }
 
 DatapointBase::~DatapointBase() {

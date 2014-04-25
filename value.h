@@ -24,8 +24,8 @@ public:
 	Value(Value const& orig, double from, double to) : SimpleValue<T>(orig,from,to), parent(orig.parent) {}
 
 	void add(T value, double time) {
-		parent.samples.append(QPointF(time,value));
-		parent.pc->setSamples(parent.samples);
+		parent.samples.push_back(QPointF(time,value));
+		parent.pc->setSamples(QVector<QPointF>::fromStdVector(parent.samples));
 		if (_values.empty()) {
 			parent.min_item->setText(QString::number(value));
 			parent.max_item->setText(QString::number(value));

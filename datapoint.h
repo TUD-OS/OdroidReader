@@ -14,11 +14,11 @@ class DatapointBase
 protected:
 	DatapointBase(QByteArray ba);
 	DatapointBase(const DatapointBase& src, double from, double to);
-	quint32 _factor;
+	uint32_t _factor;
 public:
 	virtual ~DatapointBase();
 	QwtPlotCurve* pc;
-	QVector<QPointF> samples;
+	std::vector<QPointF> samples;
 	const QString& name() const { return _name; }
 	const QString& unit() const { return _unit; }
 	quint32 factor() const { return _factor; }
@@ -27,8 +27,7 @@ public:
 
 private:
 	FIELD_TYPE _type;
-	QString _name;
-	QString _unit; //always 3 chars
+	QString _name, _unit; //always 3 chars
 	bool initialized;
 };
 

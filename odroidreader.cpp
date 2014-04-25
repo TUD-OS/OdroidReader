@@ -186,7 +186,7 @@ void OdroidReader::readData() {
 				if (d->type() != FIELD_TYPE::BIGLITTLE)
 					ts << d->value().last() << ";";
 				if (ui->sensors->item(i,0)->checkState() == Qt::Checked)
-					d->pc->setSamples(d->samples);
+					d->pc->setSamples(QVector<QPointF>::fromStdVector(d->samples));
 			}
 			if (es != ExperimentState::Idle && descs.at(1)->value().last() == 0 && executed) {
 				executed = false;
