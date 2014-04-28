@@ -1,40 +1,38 @@
 #include "experiment.h"
-#include <iostream>
 #include "odroidreader.h"
 
 Experiment::Experiment()
 {}
 
-Experiment::Experiment(QTextStream& state) {
-	qDebug() << "Constructor!";
-	title = state.readLine().toStdString();
-	runs.push_back(Experiment::Run()); //TODO! This needs to be read
-	runs.front().big = state.readLine().toInt(); //TODO: This needs to be fixed for multi-run support
-	runs.front().little = state.readLine().toInt();;
-	prepare = state.readLine().toStdString();
-	cleanup = state.readLine().toStdString();
-	command = state.readLine().toStdString();
-	runs.front().freq = state.readLine().toInt();;
-	runs.front().freq_max = state.readLine().toInt();
-	runs.front().freq_min = state.readLine().toInt();
-	runs.front().governor = state.readLine().toStdString();
-	cooldown_time = state.readLine().toInt();
-	tail_time = state.readLine().toInt();
-	std::cerr << "Read: " << title << " | " << runs.front().big << " | " << runs.front().little << " | " << prepare << " | " << cleanup << " | " << command << " | "
-			 << runs.front().freq << " | " << runs.front().freq_max << " | " << runs.front().freq_min << " | " << runs.front().governor;
+Experiment::Experiment(QJsonObject& jo) {
+	title = jo["title"].toString().toStdString();
+	runs.push_back(Experiment::Run());
+	runs.front().big = jo["big"].toBool();
+	runs.front().little = jo["little"].toBool();
+	prepare = jo["prepare"].toString().toStdString();
+	cleanup = jo["cleanup"].toString().toStdString();
+	command = jo["command"].toString().toStdString();
+	runs.front().freq = jo["frequency"].toInt();
+	runs.front().freq_max = jo["frequency_max"].toInt();
+	runs.front().freq_min = jo["frequency_min"].toInt();
+	runs.front().governor = jo["governor"].toString().toStdString();
+	cooldown_time = jo["cooldown_time"].toInt();
+	tail_time = jo["tail_time"].toInt();
 }
 
-void Experiment::serialize(QTextStream& ts) {
-	ts << QString::fromStdString(title) << "\n";
-	ts << (int)runs.front().big << "\n"; //TODO!
-	ts << (int)runs.front().little << "\n"; //TODO!
-	ts << QString::fromStdString(prepare) << "\n" << QString::fromStdString(cleanup) << "\n" << QString::fromStdString(command) << "\n";
-	ts << runs.front().freq << "\n" << runs.front().freq_max << "\n" << runs.front().freq_min << "\n"; //TODO
-	ts << QString::fromStdString(runs.front().governor) << "\n";
-	ts << cooldown_time << "\n";
-	ts << tail_time << "\n";
-	std::cerr << "Wrote: " << title << " | " << runs.front().big << " | " << runs.front().little << " | " << prepare << " | " << cleanup << " | " << command << " | "
-			  << runs.front().freq << "|" << runs.front().freq_max << "|" << runs.front().freq_min << "|" << runs.front().governor;
+void Experiment::write(QJsonObject& jo) {
+	jo["title"] = QString::fromStdString(title);
+	jo["big"] = runs.front().big;
+	jo["little"] = runs.front().big;
+	jo["prepare"] = QString::fromStdString(prepare);
+	jo["cleanup"] = QString::fromStdString(cleanup);
+	jo["command"] = QString::fromStdString(command);
+	jo["frequency"] = static_cast<qint64>(runs.front().freq);
+	jo["frequency_max"] = static_cast<qint64>(runs.front().freq_max);
+	jo["frequency_min"] = static_cast<qint64>(runs.front().freq_min);
+	jo["governor"] = QString::fromStdString(runs.front().governor);
+	jo["cooldown_time"] = static_cast<qint64>(cooldown_time);
+	jo["tail_time"] = static_cast<qint64>(tail_time);
 }
 
 std::string Experiment::prepareMeasurement(float) {

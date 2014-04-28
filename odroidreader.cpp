@@ -7,9 +7,7 @@
 #include <QtNetwork/QTcpSocket>
 #include <QMessageBox>
 #include <QtEndian>
-#include <QTextStream>
 #include <iostream>
-#include <iomanip>
 #include <cassert>
 #include <QColor>
 #include <limits>
@@ -17,6 +15,9 @@
 #include <QFile>
 #include "qcustomplot.h"
 #include <QDateTime>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QJsonArray>
 
 QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254),QColor(91,53,40),QColor(133,196,77),
 					  QColor(104,115,15),QColor(133,3,43),QColor(188,186,111),QColor(168,115,19),QColor(63,184,67)});
@@ -40,13 +41,21 @@ OdroidReader::OdroidReader(QWidget *parent) :
 	connect(qApp,SIGNAL(aboutToQuit()),this,SLOT(aboutToQuit()));
 
 	//Load state ...
-	QFile f("experiments.exp");
+	QFile f("experiments.json");
 	if (!f.exists()) return;
-	f.open(QFile::ReadOnly);
-	QTextStream ts(&f);
-	while (!ts.atEnd()) {
-		experiments.append(Experiment(ts));
+	if (!f.open(QFile::ReadOnly)) {
+		qWarning() << "Could not read experiments!";
+		return;
+	};
+	QJsonArray experimentDoc = QJsonDocument::fromJson(f.readAll()).array();
+	for (int exp = 0; exp < experimentDoc.size(); ++exp) {
+		QJsonObject experimentData = experimentDoc[exp].toObject();
+		experiments.append(Experiment(experimentData));
 	}
+//	QTextStream ts(&f);
+//	while (!ts.atEnd()) {
+//		experiments.append(Experiment(ts));
+//	}
 	updateExperiments();
 }
 
@@ -447,12 +456,17 @@ void OdroidReader::on_runSelected_clicked()
 void OdroidReader::aboutToQuit()
 {
 	//Saving state...
-	QFile f("experiments.exp");
-	f.open(QFile::WriteOnly);
-	QTextStream ts(&f);
-	for (Experiment e : experiments)
-		e.serialize(ts);
-	ts.flush();
+	QFile f("experiments.json");
+	if (!f.open(QFile::WriteOnly)) {
+		qWarning() << "Could not save experiments!";
+	};
+	QJsonArray experimentArray;
+	for (Experiment e : experiments) {
+		QJsonObject experimentData;
+		e.write(experimentData);
+		experimentArray.append(experimentData);
+	}
+	f.write(QJsonDocument(experimentArray).toJson());
 }
 
 

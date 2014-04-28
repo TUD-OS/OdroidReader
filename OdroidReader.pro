@@ -4,14 +4,10 @@
 #
 #-------------------------------------------------
 
-QT       += core gui network
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT       += core gui network printsupport widgets
 
 TARGET = OdroidReader
 TEMPLATE = app
-
-CONFIG += qwt
 
 QMAKE_CXXFLAGS += -std=c++11 -Wall -pedantic -Wextra -fno-strict-aliasing
 

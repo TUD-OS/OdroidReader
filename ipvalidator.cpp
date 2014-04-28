@@ -1,5 +1,6 @@
 #include "ipvalidator.h"
 #include <QStringList>
+#include <QString>
 #include <QDebug>
 IPValidator::IPValidator(QObject *parent) :  QValidator(parent) {}
 

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <QJsonObject>
 #include "datapoint.h"
 
 class Experiment
@@ -26,8 +27,8 @@ public:
 	//bool big, little;
 	//float start, end;
 
-	void serialize(QTextStream& ts);
-	Experiment(QTextStream& state);
+	void write(QJsonObject &jo);
+	Experiment(QJsonObject &jo);
 	Experiment();
 	std::vector<Run> runs;
 	std::string prepareMeasurement(float time);
