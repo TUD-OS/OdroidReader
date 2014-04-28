@@ -64,7 +64,6 @@ private slots:
 
   void on_listWidget_itemDoubleClicked(QListWidgetItem *item);
   void on_runNo_valueChanged(int arg1);
-  void updateInterval(int msec);
   void updateDetail();
   void on_dispUnit_currentIndexChanged(int);
 

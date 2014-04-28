@@ -37,12 +37,11 @@ OdroidReader::OdroidReader(QWidget *parent) :
 
 	connect(&tmr,SIGNAL(timeout()),this,SLOT(sendGet()));
 	connect(ui->sensors,SIGNAL(cellClicked(int,int)),this,SLOT(updateCurve(int,int)));
-	connect(ui->samplingInterval,SIGNAL(valueChanged(int)),this,SLOT(updateInterval(int)));
+	connect(ui->samplingInterval,SIGNAL(valueChanged(int)),&tmr,SLOT(setInterval(int)));
 	connect(qApp,SIGNAL(aboutToQuit()),this,SLOT(aboutToQuit()));
 
 	//Load state ...
 	QFile f("experiments.json");
-	if (!f.exists()) return;
 	if (!f.open(QFile::ReadOnly)) {
 		qWarning() << "Could not read experiments!";
 		return;
@@ -52,15 +51,7 @@ OdroidReader::OdroidReader(QWidget *parent) :
 		QJsonObject experimentData = experimentDoc[exp].toObject();
 		experiments.append(Experiment(experimentData));
 	}
-//	QTextStream ts(&f);
-//	while (!ts.atEnd()) {
-//		experiments.append(Experiment(ts));
-//	}
 	updateExperiments();
-}
-
-void OdroidReader::updateInterval(int msec) {
-	tmr.setInterval(msec);
 }
 
 OdroidReader::~OdroidReader()
