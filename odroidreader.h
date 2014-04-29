@@ -50,8 +50,6 @@ private slots:
   void updateCurve(int,int);
   void readData();
   void sendGet();
-  void on_useBig_toggled(bool checked);
-  void on_useLittle_toggled(bool);
   void on_addExperiment_clicked();
   void on_exp_name_textChanged(const QString &arg1);
   void on_listWidget_itemSelectionChanged();
@@ -70,11 +68,14 @@ private slots:
   void on_aggregate_toggled(bool checked);
   void on_axisFromZero_toggled(bool checked);
 
+  void removeEnvironment(QModelIndex idx);
+  void on_envAdd_clicked();
+
 private:
   void enableControls(bool status);
   void updateSensors();
   void updateExperiments();
-  void setupExperiment(const Experiment::Run &run);
+  void setupExperiment(const Experiment::Environment &run);
   void runCommand(std::string cmd);
   double lastTime;
   int repetition;
@@ -93,6 +94,8 @@ private:
   quint32 packetSize;
   QVector<QPointF> samples;
   QVector<Experiment> experiments;
+  Experiment* currentExp;
+  Experiment::Environment* currentEnv;
 };
 
 #endif // ODROIDREADER_H

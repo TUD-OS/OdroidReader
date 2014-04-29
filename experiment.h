@@ -8,17 +8,23 @@
 
 class Experiment
 {
+
 private:
 	int currentRun;
 
 public:
-	class Run {
+	class Environment {
 		public:
 			std::string label, governor;
 			uint32_t freq_min, freq_max, freq;
 			bool big, little;
-			std::vector<std::pair<double,double>> repetitions; //All datapoints for all repetitions
+			std::vector<std::pair<double,double>> runs; //All datapoints for all repetitions
+			QString description() const;
 	};
+
+	int rowCount(const QModelIndex &parent = QModelIndex()) const;
+	int columnCount(const QModelIndex &parent = QModelIndex()) const;
+	QVariant data(const QModelIndex &index, int role = Qt::DisplayRole) const;
 
 	std::string title, prepare, cleanup, command;
 	//QString governor;
@@ -27,10 +33,10 @@ public:
 	//bool big, little;
 	//float start, end;
 
-	void write(QJsonObject &jo);
+	void write(QJsonObject &jo) const;
 	Experiment(QJsonObject &jo);
 	Experiment();
-	std::vector<Run> runs;
+	QVector<Environment> environments;
 	std::string prepareMeasurement(float time);
 	std::string cleanupMeasurement(float time);
 	std::string startMeasurement(double time, int run);

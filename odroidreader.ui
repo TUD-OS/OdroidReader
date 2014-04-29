@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>923</width>
-    <height>678</height>
+    <height>854</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -141,7 +141,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="overview">
        <attribute name="title">
@@ -226,57 +226,48 @@
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_5">
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_12">
-             <item>
+            <layout class="QFormLayout" name="formLayout_3">
+             <property name="topMargin">
+              <number>10</number>
+             </property>
+             <item row="0" column="0">
               <widget class="QLabel" name="label_13">
                <property name="text">
                 <string>Title</string>
                </property>
               </widget>
              </item>
-             <item>
+             <item row="0" column="1">
               <widget class="QLineEdit" name="exp_name"/>
              </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_2">
-             <item>
+             <item row="1" column="0">
               <widget class="QLabel" name="label_6">
                <property name="text">
                 <string>Prepare:</string>
                </property>
               </widget>
              </item>
-             <item>
+             <item row="1" column="1">
               <widget class="QLineEdit" name="exp_prepare"/>
              </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_9">
-             <item>
+             <item row="2" column="0">
               <widget class="QLabel" name="label_11">
                <property name="text">
                 <string>Cleanup:</string>
                </property>
               </widget>
              </item>
-             <item>
+             <item row="2" column="1">
               <widget class="QLineEdit" name="exp_cleanup"/>
              </item>
-            </layout>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_10">
-             <item>
+             <item row="3" column="0">
               <widget class="QLabel" name="label_12">
                <property name="text">
                 <string>Command:</string>
                </property>
               </widget>
              </item>
-             <item>
+             <item row="3" column="1">
               <widget class="QLineEdit" name="exp_command"/>
              </item>
             </layout>
@@ -284,389 +275,43 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_7">
              <item>
-              <widget class="QLabel" name="label_7">
-               <property name="text">
-                <string>Freqency:</string>
+              <widget class="QGroupBox" name="groupBox_2">
+               <property name="title">
+                <string>Environments</string>
                </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="freq">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
+               <property name="checkable">
+                <bool>false</bool>
                </property>
-               <item>
-                <property name="text">
-                 <string>250 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>300 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>350 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>400 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>450 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>500 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>550 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>600 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>800 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>900 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1000 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1100 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1200 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1300 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1400 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1500 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1600 MHz</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_14">
-               <property name="text">
-                <string>Min Freqency:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="freq_min">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <item>
-                <property name="text">
-                 <string>250 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>300 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>350 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>400 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>450 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>500 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>550 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>600 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>800 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>900 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1000 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1100 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1200 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1300 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1400 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1500 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1600 MHz</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_15">
-               <property name="text">
-                <string>Max Freqency:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="freq_max">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <item>
-                <property name="text">
-                 <string>250 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>300 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>350 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>400 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>450 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>500 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>550 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>600 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>800 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>900 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1000 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1100 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1200 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1300 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1400 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1500 MHz</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>1600 MHz</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="label_8">
-               <property name="text">
-                <string>Governor:</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="freq_gov">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-               <item>
-                <property name="text">
-                 <string>ondemand</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>interactive</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>conservative</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>userspace</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>powersave</string>
-                </property>
-               </item>
-               <item>
-                <property name="text">
-                 <string>performance</string>
-                </property>
-               </item>
-              </widget>
-             </item>
-             <item>
-              <spacer name="horizontalSpacer">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="useBig">
-               <property name="text">
-                <string>Big</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QCheckBox" name="useLittle">
-               <property name="text">
-                <string>Little</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
+               <layout class="QHBoxLayout" name="horizontalLayout_16">
+                <item>
+                 <widget class="QTableView" name="environment">
+                  <property name="editTriggers">
+                   <set>QAbstractItemView::AllEditTriggers</set>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <layout class="QVBoxLayout" name="verticalLayout_6">
+                  <item>
+                   <widget class="QPushButton" name="envAdd">
+                    <property name="text">
+                     <string>Add</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QPushButton" name="envRemove">
+                    <property name="enabled">
+                     <bool>false</bool>
+                    </property>
+                    <property name="text">
+                     <string>Remove</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
+               </layout>
               </widget>
              </item>
             </layout>

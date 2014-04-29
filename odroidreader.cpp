@@ -17,7 +17,12 @@
 #include <QDateTime>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include "environmentmodel.h"
+#include "environmentdelegate.h"
 #include <QJsonArray>
+
+Q_DECLARE_METATYPE(SimpleValue<double>*)
+Q_DECLARE_METATYPE(EnvironmentModel*)
 
 QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254),QColor(91,53,40),QColor(133,196,77),
 					  QColor(104,115,15),QColor(133,3,43),QColor(188,186,111),QColor(168,115,19),QColor(63,184,67)});
@@ -28,7 +33,7 @@ std::vector<Datapoint<double>*> OdroidReader::descs;
 OdroidReader::OdroidReader(QWidget *parent) :
 	QMainWindow(parent), executed(false), es(ExperimentState::Idle),
 	ui(new Ui::OdroidReader),
-	sock(nullptr)
+	sock(nullptr), currentExp(nullptr), currentEnv(nullptr)
 {
 	ui->setupUi(this);
 	ui->ip->setValidator(new IPValidator());
@@ -37,7 +42,8 @@ OdroidReader::OdroidReader(QWidget *parent) :
 
 	connect(&tmr,SIGNAL(timeout()),this,SLOT(sendGet()));
 	connect(ui->sensors,SIGNAL(cellClicked(int,int)),this,SLOT(updateCurve(int,int)));
-	connect(ui->samplingInterval,SIGNAL(valueChanged(int)),&tmr,SLOT(setInterval(int)));
+	connect(ui->environment,SIGNAL(clicked(QModelIndex)),this,SLOT(removeEnvironment(QModelIndex)));
+	//connect(ui->samplingInterval,SIGNAL(valueChanged(int)),&tmr,SLOT(setInterval(int)));
 	connect(qApp,SIGNAL(aboutToQuit()),this,SLOT(aboutToQuit()));
 
 	//Load state ...
@@ -46,6 +52,7 @@ OdroidReader::OdroidReader(QWidget *parent) :
 		qWarning() << "Could not read experiments!";
 		return;
 	};
+
 	QJsonArray experimentDoc = QJsonDocument::fromJson(f.readAll()).array();
 	for (int exp = 0; exp < experimentDoc.size(); ++exp) {
 		QJsonObject experimentData = experimentDoc[exp].toObject();
@@ -109,7 +116,7 @@ void OdroidReader::updateSensors() {
 	}
 }
 
-void OdroidReader::setupExperiment(Experiment::Run const &run) {
+void OdroidReader::setupExperiment(Experiment::Environment const &run) {
 	assert(sock);
 	sock->write("SETUP\n");
 	std::string gov = run.governor;
@@ -285,16 +292,6 @@ void OdroidReader::on_connect_clicked()
 	sock->connectToHost(ui->ip->text(),1234);
 }
 
-void OdroidReader::on_useBig_toggled(bool)
-{
-	if (!ui->useBig->isChecked() && !ui->useLittle->isChecked()) ui->useBig->setChecked(true);
-}
-
-void OdroidReader::on_useLittle_toggled(bool)
-{
-	if (!ui->useBig->isChecked() && !ui->useLittle->isChecked()) ui->useLittle->setChecked(true);
-}
-
 quint32 OdroidReader::freq2Int(QString s) {
 	s.chop(4);
 	return s.toInt();
@@ -312,21 +309,14 @@ void OdroidReader::updateExperiments() {
 void OdroidReader::on_addExperiment_clicked()
 {
 	Experiment experiment;
-	Experiment::Run run;
+	Experiment::Environment run;
 	experiment.title = ui->exp_name->text().toStdString();
 	experiment.cleanup = ui->exp_cleanup->text().toStdString();
 	experiment.command = ui->exp_command->text().toStdString();
 	experiment.prepare = ui->exp_prepare->text().toStdString();
 	experiment.cooldown_time = ui->cooldown->value();
 	experiment.tail_time = ui->tail->value();
-	run.big = ui->useBig->isChecked();
-	run.little = ui->useLittle->isChecked();
-	run.label = "Run 0";
-	run.freq = freq2Int(ui->freq->currentText());
-	run.freq_max = freq2Int(ui->freq_max->currentText());
-	run.freq_min = freq2Int(ui->freq_min->currentText());
-	run.governor = ui->freq_gov->currentText().toStdString();
-	experiment.runs.push_back(run);
+	experiment.environments.push_back(run);
 	experiments.append(experiment);
 	ui->addExperiment->setEnabled(false);
 	updateExperiments();
@@ -351,26 +341,16 @@ void OdroidReader::on_listWidget_itemSelectionChanged()
 	ui->updateExperiment->setEnabled(canModify);
 	ui->runSelected->setEnabled(toRun.empty() && sock && sock->isWritable() && canModify);
 	if (!canModify) return;
-	const Experiment& e = experiments.at(ui->listWidget->currentRow());
-	const Experiment::Run& run = e.runs.back(); //TODO: This should be fixed for run configuration
-	ui->useLittle->setCheckState(Qt::Checked); //We need this! Else we run into the neither nor situation
-	ui->exp_name->setText(QString::fromStdString(e.title));
-	ui->exp_cleanup->setText(QString::fromStdString(e.cleanup));
-	ui->exp_command->setText(QString::fromStdString(e.command));
-	ui->exp_prepare->setText(QString::fromStdString(e.prepare));
-	ui->cooldown->setValue(e.cooldown_time);
-	ui->tail->setValue(e.tail_time);
-	ui->useBig->setCheckState(run.big?Qt::Checked:Qt::Unchecked);
-	ui->useLittle->setCheckState(run.little?Qt::Checked:Qt::Unchecked);
-	for (int i = 0; i < ui->freq->count(); i++)
-		if (ui->freq->itemText(i) == QString::number(run.freq)+" MHz")
-			ui->freq->setCurrentIndex(i);
-	for (int i = 0; i < ui->freq_max->count(); i++)
-		if (ui->freq_max->itemText(i) == QString::number(run.freq_max)+" MHz")
-			ui->freq_max->setCurrentIndex(i);
-	for (int i = 0; i < ui->freq_min->count(); i++)
-		if (ui->freq_min->itemText(i) == QString::number(run.freq_min)+" MHz")
-			ui->freq_min->setCurrentIndex(i);
+	currentExp = &experiments[ui->listWidget->currentRow()];
+	ui->exp_name->setText(QString::fromStdString(currentExp->title));
+	ui->exp_cleanup->setText(QString::fromStdString(currentExp->cleanup));
+	ui->exp_command->setText(QString::fromStdString(currentExp->command));
+	ui->exp_prepare->setText(QString::fromStdString(currentExp->prepare));
+	ui->cooldown->setValue(currentExp->cooldown_time);
+	ui->tail->setValue(currentExp->tail_time);
+	ui->environment->setModel(new EnvironmentModel(currentExp));
+	ui->environment->setItemDelegate(new EnvironmentDelegate(ui->environment));
+	ui->environment->resizeColumnsToContents();
 }
 
 void OdroidReader::on_removeExperiment_clicked()
@@ -400,7 +380,7 @@ void OdroidReader::runExperiments() {
 			cmd = toRun.back()->startMeasurement(lastTime,0); //TODO
 			if (cmd.length() > 0) {
 				qDebug() << "Configure";
-				setupExperiment(toRun.back()->runs.back());
+				setupExperiment(toRun.back()->environments.back());
 				qDebug() << "Start";
 				runCommand(cmd);
 				es = ExperimentState::Execute;
@@ -463,13 +443,13 @@ void OdroidReader::aboutToQuit()
 
 void OdroidReader::on_listWidget_itemDoubleClicked(QListWidgetItem *item)
 {
-	if (experiments.at(ui->listWidget->row(item)).runs.empty()) {
+	if (experiments.at(ui->listWidget->row(item)).environments.empty()) {
 		qDebug() << "This experiment has not yet been run!";
 		return;
 	}
-	qDebug() << "We have data from " << experiments.at(ui->listWidget->row(item)).runs.size() << "Runs. Using first";
+	qDebug() << "We have data from " << experiments.at(ui->listWidget->row(item)).environments.size() << "Runs. Using first";
 	curExp = &experiments.at(ui->listWidget->row(item));
-	ui->runNo->setMaximum(curExp->runs.size()-1);
+	ui->runNo->setMaximum(curExp->environments.size()-1);
 	ui->runNo->setValue(0);
 	ui->dispUnit->clear();
 	for (DatapointBase const *p : descs)
@@ -479,7 +459,7 @@ void OdroidReader::on_listWidget_itemDoubleClicked(QListWidgetItem *item)
 	ui->expResult->setCurrentIndex(2);
 }
 
-Q_DECLARE_METATYPE(SimpleValue<double>*)
+
 
 void OdroidReader::on_dispUnit_currentIndexChanged(int)
 {
@@ -509,7 +489,7 @@ void OdroidReader::on_dispUnit_currentIndexChanged(int)
 //			init = false;
 //		}
 	} else {
-		std::pair<double,double> pair = curExp->runs.front().repetitions.at(ui->runNo->value());
+		std::pair<double,double> pair = curExp->environments.front().runs.at(ui->runNo->value());
 		for (Datapoint<double>* p : descs) {
 			if (p->unit() != ui->dispUnit->currentText()) continue;
 			vals.push_back(new SimpleValue<double>(p->value(),pair.first,pair.second));
@@ -622,4 +602,16 @@ void OdroidReader::on_aggregate_toggled(bool checked)
 void OdroidReader::on_axisFromZero_toggled(bool)
 {
 	on_runNo_valueChanged(ui->runNo->value());
+}
+
+void OdroidReader::on_envAdd_clicked()
+{
+	QAbstractItemModel *em = ui->environment->model();
+	if (em) em->insertRow(em->rowCount());
+}
+
+void OdroidReader::removeEnvironment(QModelIndex idx) {
+	if (idx.column() != 7) return;
+	QAbstractItemModel *em = ui->environment->model();
+	if (em) em->removeRow(idx.row());
 }
