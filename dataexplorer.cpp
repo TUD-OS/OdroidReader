@@ -20,9 +20,9 @@ DataExplorer::~DataExplorer()
 }
 
 void DataExplorer::updateDetail() {
-	ui->runPlot->clearPlottables();
+	ui->selectEnvironment->clearPlottables();
 	int i = 0;
-	for (auto p : ui->selectPower->selectedPlottables()) {
+	for (auto p : ui->selectMetric->selectedPlottables()) {
 		if (ui->aggregate->isChecked()) {
 //			QVector<double> ticks;
 //			QVector<QString> labels;
@@ -30,24 +30,24 @@ void DataExplorer::updateDetail() {
 //			int i = 0;
 //			for (std::vector<Datapoint<double>*> v : curExp->runs.front().data) {
 //				const Value<double> &p = v.at(x)->value();
-//				QCPStatisticalBox* b = new QCPStatisticalBox(ui->runPlot->xAxis,ui->runPlot->yAxis);
+//				QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectEnvironment->xAxis,ui->selectEnvironment->yAxis);
 //				b->setData(i,p.min(),p.quantile(0.25),p.median(),p.quantile(0.75),p.max());
-//				ui->runPlot->addPlottable(b);
+//				ui->selectEnvironment->addPlottable(b);
 //				labels.append(QString("Run %1").arg(i+1));
 //				ticks.append(i++);
 //			}
-//			ui->runPlot->xAxis->setTickVector(ticks);
-//			ui->runPlot->xAxis->setTickVectorLabels(labels);
-//			ui->runPlot->xAxis->setAutoTicks(false);
-//			ui->runPlot->xAxis->setAutoTickLabels(false);
-//			ui->runPlot->setInteractions(0);
+//			ui->selectEnvironment->xAxis->setTickVector(ticks);
+//			ui->selectEnvironment->xAxis->setTickVectorLabels(labels);
+//			ui->selectEnvironment->xAxis->setAutoTicks(false);
+//			ui->selectEnvironment->xAxis->setAutoTickLabels(false);
+//			ui->selectEnvironment->setInteractions(0);
 			//Disabled for now! TODO
 		} else {
-			ui->runPlot->xAxis->setAutoTicks(true);
-			ui->runPlot->xAxis->setAutoTickLabels(true);
-			ui->runPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+			ui->selectEnvironment->xAxis->setAutoTicks(true);
+			ui->selectEnvironment->xAxis->setAutoTickLabels(true);
+			ui->selectEnvironment->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 			SimpleValue<double>* dp = p->property("Datapoint").value<SimpleValue<double>*>();
-			QCPGraph *g = ui->runPlot->addGraph();
+			QCPGraph *g = ui->selectEnvironment->addGraph();
 			g->setPen(origcols[i%origcols.size()]);
 			QVector<double> x,y;
 			double start = dp->values().front().first;
@@ -59,33 +59,33 @@ void DataExplorer::updateDetail() {
 			p->setSelectedBrush(origcols[i++%origcols.size()]);
 		}
 	}
-	ui->runPlot->rescaleAxes();
+	ui->selectEnvironment->rescaleAxes();
 	if (ui->aggregate->isChecked())
-		ui->runPlot->xAxis->scaleRange(1.1, ui->selectPower->xAxis->range().center());
+		ui->selectEnvironment->xAxis->scaleRange(1.1, ui->selectMetric->xAxis->range().center());
 	if (ui->axisFromZero->isChecked())
-		ui->runPlot->yAxis->setRangeLower(0);
-	ui->runPlot->replot();
+		ui->selectEnvironment->yAxis->setRangeLower(0);
+	ui->selectEnvironment->replot();
 }
 
 void DataExplorer::on_runNo_valueChanged(int)
 {
 	std::vector<int> selected;
-	for (int i = 0; i < ui->selectPower->plottableCount(); i++) {
-		if (ui->selectPower->plottable(i)->selected()) {
+	for (int i = 0; i < ui->selectMetric->plottableCount(); i++) {
+		if (ui->selectMetric->plottable(i)->selected()) {
 			selected.push_back(i);
 		}
 	}
 	on_dispUnit_currentIndexChanged(ui->dispUnit->currentIndex());
 	for (int i : selected)
-		ui->selectPower->plottable(i)->setSelected(true);
+		ui->selectMetric->plottable(i)->setSelected(true);
 	updateDetail();
-	ui->selectPower->replot();
+	ui->selectMetric->replot();
 }
 
 void DataExplorer::on_dispUnit_currentIndexChanged(int)
 {
 	QVector<double> ticks;
-	ui->selectPower->clearPlottables();
+	ui->selectMetric->clearPlottables();
 	QBrush boxBrush(QColor(60, 60, 255, 100));
 	boxBrush.setStyle(Qt::Dense6Pattern); // make it look oldschool
 	std::vector<SimpleValue<double>*> vals;
@@ -119,39 +119,39 @@ void DataExplorer::on_dispUnit_currentIndexChanged(int)
 	}
 	int i = 0;
 	for (SimpleValue<double> *p : vals) {
-		QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectPower->xAxis,ui->selectPower->yAxis);
+		QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectMetric->xAxis,ui->selectMetric->yAxis);
 		b->setProperty("Datapoint",QVariant::fromValue(p));
 		if (ui->aggregate->isChecked())
 			b->setProperty("DP_ID",QVariant(dpId.at(i)));
 		b->setBrush(boxBrush);
 		b->setData(i,p->min(),p->quantile(0.25),p->median(),p->quantile(0.75),p->max());
-		ui->selectPower->addPlottable(b);
+		ui->selectMetric->addPlottable(b);
 		ticks.append(i++);
 	};
-	ui->selectPower->xAxis->setSubTickCount(0);
-	ui->selectPower->xAxis->setTickLength(0, 4);
-	ui->selectPower->xAxis->setTickLabelRotation(40);
-	ui->selectPower->xAxis->setAutoTicks(false);
-	ui->selectPower->xAxis->setAutoTickLabels(false);
-	ui->selectPower->xAxis->setTickVector(ticks);
-	ui->selectPower->xAxis->setTickVectorLabels(labels);
-	ui->selectPower->setInteractions(QCP::iMultiSelect | QCP::iSelectPlottables);
+	ui->selectMetric->xAxis->setSubTickCount(0);
+	ui->selectMetric->xAxis->setTickLength(0, 4);
+	ui->selectMetric->xAxis->setTickLabelRotation(40);
+	ui->selectMetric->xAxis->setAutoTicks(false);
+	ui->selectMetric->xAxis->setAutoTickLabels(false);
+	ui->selectMetric->xAxis->setTickVector(ticks);
+	ui->selectMetric->xAxis->setTickVectorLabels(labels);
+	ui->selectMetric->setInteractions(QCP::iMultiSelect | QCP::iSelectPlottables);
 
-	ui->selectPower->rescaleAxes();
-	ui->selectPower->xAxis->scaleRange(1.1, ui->selectPower->xAxis->range().center());
-	connect(ui->selectPower,SIGNAL(selectionChangedByUser()), this, SLOT(updateDetail()));
+	ui->selectMetric->rescaleAxes();
+	ui->selectMetric->xAxis->scaleRange(1.1, ui->selectMetric->xAxis->range().center());
+	connect(ui->selectMetric,SIGNAL(selectionChangedByUser()), this, SLOT(updateDetail()));
 	if (ui->axisFromZero->isChecked())
-		ui->selectPower->yAxis->setRangeLower(0);
-	ui->selectPower->replot();
+		ui->selectMetric->yAxis->setRangeLower(0);
+	ui->selectMetric->replot();
 }
 
 void DataExplorer::on_aggregate_toggled(bool checked)
 {
 	ui->runNo->setEnabled(!checked);
 	if (checked) {
-		ui->selectPower->setInteraction(QCP::iSelectPlottables);
+		ui->selectMetric->setInteraction(QCP::iSelectPlottables);
 	} else {
-		ui->selectPower->setInteractions(QCP::iSelectPlottables | QCP::iMultiSelect);
+		ui->selectMetric->setInteractions(QCP::iSelectPlottables | QCP::iMultiSelect);
 	}
 	on_dispUnit_currentIndexChanged(ui->dispUnit->currentIndex());
 	updateDetail();

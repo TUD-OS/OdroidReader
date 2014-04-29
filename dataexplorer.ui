@@ -68,7 +68,10 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_15">
      <item>
-      <widget class="QCustomPlot" name="selectPower" native="true"/>
+      <widget class="QCustomPlot" name="selectMetric" native="true"/>
+     </item>
+     <item>
+      <widget class="QCustomPlot" name="selectEnvironment" native="true"/>
      </item>
      <item>
       <widget class="QCustomPlot" name="runPlot" native="true"/>
