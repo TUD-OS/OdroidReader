@@ -7,7 +7,6 @@
 #include <QtNetwork/QTcpSocket>
 #include <QMessageBox>
 #include <QtEndian>
-#include <iostream>
 #include <cassert>
 #include <QColor>
 #include <limits>
@@ -19,10 +18,11 @@
 #include <QJsonObject>
 #include "environmentmodel.h"
 #include "environmentdelegate.h"
+//#include <ui_dataexplorer.h>
 #include <QJsonArray>
 
-Q_DECLARE_METATYPE(SimpleValue<double>*)
 Q_DECLARE_METATYPE(EnvironmentModel*)
+Q_DECLARE_METATYPE(Experiment*)
 
 QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254),QColor(91,53,40),QColor(133,196,77),
 					  QColor(104,115,15),QColor(133,3,43),QColor(188,186,111),QColor(168,115,19),QColor(63,184,67)});
@@ -56,7 +56,7 @@ OdroidReader::OdroidReader(QWidget *parent) :
 	QJsonArray experimentDoc = QJsonDocument::fromJson(f.readAll()).array();
 	for (int exp = 0; exp < experimentDoc.size(); ++exp) {
 		QJsonObject experimentData = experimentDoc[exp].toObject();
-		experiments.append(Experiment(experimentData));
+		experiments.append(Experiment(experimentData, &descs));
 	}
 	updateExperiments();
 }
@@ -119,20 +119,20 @@ void OdroidReader::updateSensors() {
 void OdroidReader::setupExperiment(Experiment::Environment const &run) {
 	assert(sock);
 	sock->write("SETUP\n");
-	std::string gov = run.governor;
-	sock->write(gov.append("\n").c_str());
-	std::cerr << "Governor is:" << gov;
+	QString gov = run.governor;
+	sock->write(gov.append("\n").toStdString().c_str());
+	qDebug() << "Governor is:" << gov;
 	if (gov == "ondemand\n")
 		sock->write(std::to_string(run.freq).append("000\n").c_str());
 	sock->write(std::to_string(run.freq_min).append("000\n").c_str());
 	sock->write(std::to_string(run.freq_max).append("000\n").c_str());
 }
 
-void OdroidReader::runCommand(std::string cmd) {
+void OdroidReader::runCommand(QString cmd) {
 	assert(sock);
-	std::cerr << "Executing" << cmd;
+	qDebug() << "Executing" << cmd;
 	sock->write("EXEC\n");
-	sock->write(cmd.append("\n").c_str());
+	sock->write(cmd.append("\n").toStdString().c_str());
 	executed = true;
 }
 
@@ -207,7 +207,7 @@ void OdroidReader::readData() {
 				if (ts.device() != nullptr) delete ts.device();
 				QFile* f = new QFile("log_"+QDateTime::currentDateTime().toString()+".log");
 				if (!f->open(QFile::ReadWrite | QFile::Truncate)) {
-					std::cerr << "Creating logfile failed :(" << std::endl;
+					qDebug() << "Creating logfile failed :(";
 					QApplication::instance()->exit(-1);
 				}
 				ts.setDevice(f);
@@ -239,7 +239,7 @@ void OdroidReader::readData() {
 		  } while (got == 0);
 		  break;
 		case Query::NONE:
-			std::cerr << "ERROR: Got data without query!" << std::endl;
+			qDebug() << "ERROR: Got data without query!";
 	}
 }
 
@@ -300,7 +300,7 @@ quint32 OdroidReader::freq2Int(QString s) {
 void OdroidReader::updateExperiments() {
 	ui->listWidget->clear();
 	for (Experiment& e : experiments) {
-		QListWidgetItem* lwi = new QListWidgetItem(QString::fromStdString(e.title));
+		QListWidgetItem* lwi = new QListWidgetItem(e.title);
 		lwi->setCheckState(Qt::Checked);
 		ui->listWidget->addItem(lwi);
 	}
@@ -310,10 +310,10 @@ void OdroidReader::on_addExperiment_clicked()
 {
 	Experiment experiment;
 	Experiment::Environment run;
-	experiment.title = ui->exp_name->text().toStdString();
-	experiment.cleanup = ui->exp_cleanup->text().toStdString();
-	experiment.command = ui->exp_command->text().toStdString();
-	experiment.prepare = ui->exp_prepare->text().toStdString();
+	experiment.title = ui->exp_name->text();
+	experiment.cleanup = ui->exp_cleanup->text();
+	experiment.command = ui->exp_command->text();
+	experiment.prepare = ui->exp_prepare->text();
 	experiment.cooldown_time = ui->cooldown->value();
 	experiment.tail_time = ui->tail->value();
 	experiment.environments.push_back(run);
@@ -326,7 +326,7 @@ void OdroidReader::on_exp_name_textChanged(const QString &arg1)
 {
 	if (arg1.isEmpty()) { ui->addExperiment->setEnabled(false); }
 	for (Experiment e : experiments) {
-		if (e.title == arg1.toStdString()) {
+		if (e.title == arg1) {
 			ui->addExperiment->setEnabled(false);
 			return;
 		}
@@ -342,10 +342,10 @@ void OdroidReader::on_listWidget_itemSelectionChanged()
 	ui->runSelected->setEnabled(toRun.empty() && sock && sock->isWritable() && canModify);
 	if (!canModify) return;
 	currentExp = &experiments[ui->listWidget->currentRow()];
-	ui->exp_name->setText(QString::fromStdString(currentExp->title));
-	ui->exp_cleanup->setText(QString::fromStdString(currentExp->cleanup));
-	ui->exp_command->setText(QString::fromStdString(currentExp->command));
-	ui->exp_prepare->setText(QString::fromStdString(currentExp->prepare));
+	ui->exp_name->setText(currentExp->title);
+	ui->exp_cleanup->setText(currentExp->cleanup);
+	ui->exp_command->setText(currentExp->command);
+	ui->exp_prepare->setText(currentExp->prepare);
 	ui->cooldown->setValue(currentExp->cooldown_time);
 	ui->tail->setValue(currentExp->tail_time);
 	ui->environment->setModel(new EnvironmentModel(currentExp));
@@ -366,7 +366,7 @@ void OdroidReader::on_updateExperiment_clicked()
 }
 
 void OdroidReader::runExperiments() {
-	std::string cmd;
+	QString cmd;
 	switch (es) {
 		case ExperimentState::Idle:
 			cmd = toRun.back()->prepareMeasurement(lastTime);
@@ -408,6 +408,12 @@ void OdroidReader::runExperiments() {
 				else
 					runExperiments();
 			} else {
+				ui->expSelect->clear();
+				for (Experiment& e : experiments) {
+					if (e.hasData()) {
+						ui->expSelect->addItem(e.title,QVariant::fromValue(&e));
+					}
+				}
 				ui->experiments->setEnabled(true);
 			}
 	}
@@ -440,170 +446,6 @@ void OdroidReader::aboutToQuit()
 	f.write(QJsonDocument(experimentArray).toJson());
 }
 
-
-void OdroidReader::on_listWidget_itemDoubleClicked(QListWidgetItem *item)
-{
-	if (experiments.at(ui->listWidget->row(item)).environments.empty()) {
-		qDebug() << "This experiment has not yet been run!";
-		return;
-	}
-	qDebug() << "We have data from " << experiments.at(ui->listWidget->row(item)).environments.size() << "Runs. Using first";
-	curExp = &experiments.at(ui->listWidget->row(item));
-	ui->runNo->setMaximum(curExp->environments.size()-1);
-	ui->runNo->setValue(0);
-	ui->dispUnit->clear();
-	for (DatapointBase const *p : descs)
-		if (ui->dispUnit->findText(p->unit()) == -1)
-			ui->dispUnit->addItem(p->unit());
-	on_runNo_valueChanged(0);
-	ui->expResult->setCurrentIndex(2);
-}
-
-
-
-void OdroidReader::on_dispUnit_currentIndexChanged(int)
-{
-	QVector<double> ticks;
-	ui->selectPower->clearPlottables();
-	QBrush boxBrush(QColor(60, 60, 255, 100));
-	boxBrush.setStyle(Qt::Dense6Pattern); // make it look oldschool
-	std::vector<SimpleValue<double>*> vals;
-	std::vector<int> dpId;
-	QVector<QString> labels;
-	if (ui->aggregate->isChecked()) {
-//		bool init = true;
-		//TODO: Aggregate is disabled for now!
-//		for (std::vector<Datapoint<double>*> v : curExp->runs.front().repetitions.data) {
-//			int i = 0;
-//			int idx = 0;
-//			for (Datapoint<double>* p : v) {
-//				idx++;
-//				if (p->unit() != ui->dispUnit->currentText()) continue;
-//				if (init) {
-//					vals.push_back(new SimpleValue<double>());
-//					labels.push_back(p->name());
-//					dpId.push_back(idx-1);
-//				}
-//				vals.at(i++)->add(p->value().avg(),0);
-//			}
-//			init = false;
-//		}
-	} else {
-		std::pair<double,double> pair = curExp->environments.front().runs.at(ui->runNo->value());
-		for (Datapoint<double>* p : descs) {
-			if (p->unit() != ui->dispUnit->currentText()) continue;
-			vals.push_back(new SimpleValue<double>(p->value(),pair.first,pair.second));
-			labels.push_back(p->name());
-		}
-	}
-	int i = 0;
-	for (SimpleValue<double> *p : vals) {
-		QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectPower->xAxis,ui->selectPower->yAxis);
-		b->setProperty("Datapoint",QVariant::fromValue(p));
-		if (ui->aggregate->isChecked())
-			b->setProperty("DP_ID",QVariant(dpId.at(i)));
-		b->setBrush(boxBrush);
-		b->setData(i,p->min(),p->quantile(0.25),p->median(),p->quantile(0.75),p->max());
-		ui->selectPower->addPlottable(b);
-		ticks.append(i++);
-	};
-	ui->selectPower->xAxis->setSubTickCount(0);
-	ui->selectPower->xAxis->setTickLength(0, 4);
-	ui->selectPower->xAxis->setTickLabelRotation(40);
-	ui->selectPower->xAxis->setAutoTicks(false);
-	ui->selectPower->xAxis->setAutoTickLabels(false);
-	ui->selectPower->xAxis->setTickVector(ticks);
-	ui->selectPower->xAxis->setTickVectorLabels(labels);
-	ui->selectPower->setInteractions(QCP::iMultiSelect | QCP::iSelectPlottables);
-
-	ui->selectPower->rescaleAxes();
-	ui->selectPower->xAxis->scaleRange(1.1, ui->selectPower->xAxis->range().center());
-	connect(ui->selectPower,SIGNAL(selectionChangedByUser()), this, SLOT(updateDetail()));
-	if (ui->axisFromZero->isChecked())
-		ui->selectPower->yAxis->setRangeLower(0);
-	ui->selectPower->replot();
-}
-
-void OdroidReader::updateDetail() {
-	ui->runPlot->clearPlottables();
-	int i = 0;
-	for (auto p : ui->selectPower->selectedPlottables()) {
-		if (ui->aggregate->isChecked()) {
-//			QVector<double> ticks;
-//			QVector<QString> labels;
-//			int x = p->property("DP_ID").value<int>();
-//			int i = 0;
-//			for (std::vector<Datapoint<double>*> v : curExp->runs.front().data) {
-//				const Value<double> &p = v.at(x)->value();
-//				QCPStatisticalBox* b = new QCPStatisticalBox(ui->runPlot->xAxis,ui->runPlot->yAxis);
-//				b->setData(i,p.min(),p.quantile(0.25),p.median(),p.quantile(0.75),p.max());
-//				ui->runPlot->addPlottable(b);
-//				labels.append(QString("Run %1").arg(i+1));
-//				ticks.append(i++);
-//			}
-//			ui->runPlot->xAxis->setTickVector(ticks);
-//			ui->runPlot->xAxis->setTickVectorLabels(labels);
-//			ui->runPlot->xAxis->setAutoTicks(false);
-//			ui->runPlot->xAxis->setAutoTickLabels(false);
-//			ui->runPlot->setInteractions(0);
-			//Disabled for now! TODO
-		} else {
-			ui->runPlot->xAxis->setAutoTicks(true);
-			ui->runPlot->xAxis->setAutoTickLabels(true);
-			ui->runPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
-			SimpleValue<double>* dp = p->property("Datapoint").value<SimpleValue<double>*>();
-			QCPGraph *g = ui->runPlot->addGraph();
-			g->setPen(origcols[i%origcols.size()]);
-			QVector<double> x,y;
-			double start = dp->values().front().first;
-			for (std::pair<double,double> v : dp->values()) {
-				x.append(v.first-start);
-				y.append(v.second);
-			}
-			g->setData(x,y);
-			p->setSelectedBrush(origcols[i++%origcols.size()]);
-		}
-	}
-	ui->runPlot->rescaleAxes();
-	if (ui->aggregate->isChecked())
-		ui->runPlot->xAxis->scaleRange(1.1, ui->selectPower->xAxis->range().center());
-	if (ui->axisFromZero->isChecked())
-		ui->runPlot->yAxis->setRangeLower(0);
-	ui->runPlot->replot();
-}
-
-void OdroidReader::on_runNo_valueChanged(int)
-{
-	std::vector<int> selected;
-	for (int i = 0; i < ui->selectPower->plottableCount(); i++) {
-		if (ui->selectPower->plottable(i)->selected()) {
-			selected.push_back(i);
-		}
-	}
-	on_dispUnit_currentIndexChanged(ui->dispUnit->currentIndex());
-	for (int i : selected)
-		ui->selectPower->plottable(i)->setSelected(true);
-	updateDetail();
-	ui->selectPower->replot();
-}
-
-void OdroidReader::on_aggregate_toggled(bool checked)
-{
-	ui->runNo->setEnabled(!checked);
-	if (checked) {
-		ui->selectPower->setInteraction(QCP::iSelectPlottables);
-	} else {
-		ui->selectPower->setInteractions(QCP::iSelectPlottables | QCP::iMultiSelect);
-	}
-	on_dispUnit_currentIndexChanged(ui->dispUnit->currentIndex());
-	updateDetail();
-}
-
-void OdroidReader::on_axisFromZero_toggled(bool)
-{
-	on_runNo_valueChanged(ui->runNo->value());
-}
-
 void OdroidReader::on_envAdd_clicked()
 {
 	QAbstractItemModel *em = ui->environment->model();
@@ -614,4 +456,9 @@ void OdroidReader::removeEnvironment(QModelIndex idx) {
 	if (idx.column() != 7) return;
 	QAbstractItemModel *em = ui->environment->model();
 	if (em) em->removeRow(idx.row());
+}
+
+void OdroidReader::on_expSelect_currentIndexChanged(int)
+{
+	ui->dataExplorer->setExperiment(ui->expSelect->currentData().value<Experiment*>());
 }

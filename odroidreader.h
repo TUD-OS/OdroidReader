@@ -60,23 +60,17 @@ private slots:
   void aboutToQuit();
   void runExperiments();
 
-  void on_listWidget_itemDoubleClicked(QListWidgetItem *item);
-  void on_runNo_valueChanged(int arg1);
-  void updateDetail();
-  void on_dispUnit_currentIndexChanged(int);
-
-  void on_aggregate_toggled(bool checked);
-  void on_axisFromZero_toggled(bool checked);
-
   void removeEnvironment(QModelIndex idx);
   void on_envAdd_clicked();
+
+  void on_expSelect_currentIndexChanged(int index);
 
 private:
   void enableControls(bool status);
   void updateSensors();
   void updateExperiments();
   void setupExperiment(const Experiment::Environment &run);
-  void runCommand(std::string cmd);
+  void runCommand(QString cmd);
   double lastTime;
   int repetition;
   bool executed;

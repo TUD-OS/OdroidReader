@@ -141,7 +141,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="overview">
        <attribute name="title">
@@ -480,74 +480,19 @@
              </widget>
             </item>
             <item>
-             <widget class="QLineEdit" name="currentExp">
-              <property name="readOnly">
-               <bool>true</bool>
+             <widget class="QComboBox" name="expSelect">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
               </property>
              </widget>
             </item>
            </layout>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_14">
-            <item>
-             <widget class="QComboBox" name="dispUnit"/>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_16">
-              <property name="text">
-               <string>Values</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="aggregate">
-              <property name="text">
-               <string>Aggregate Averages of Runs</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="axisFromZero">
-              <property name="text">
-               <string>Start Axes at 0</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <spacer name="horizontalSpacer_3">
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
-              </property>
-              <property name="sizeHint" stdset="0">
-               <size>
-                <width>40</width>
-                <height>20</height>
-               </size>
-              </property>
-             </spacer>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_4">
-              <property name="text">
-               <string>Run:</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QSpinBox" name="runNo"/>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_15">
-            <item>
-             <widget class="QCustomPlot" name="selectPower" native="true"/>
-            </item>
-            <item>
-             <widget class="QCustomPlot" name="runPlot" native="true"/>
-            </item>
-           </layout>
+           <widget class="DataExplorer" name="dataExplorer" native="true"/>
           </item>
          </layout>
         </item>
@@ -583,6 +528,12 @@
    <class>QCustomPlot</class>
    <extends>QWidget</extends>
    <header>qcustomplot.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>DataExplorer</class>
+   <extends>QWidget</extends>
+   <header>dataexplorer.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

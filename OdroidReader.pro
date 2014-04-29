@@ -18,7 +18,8 @@ SOURCES += main.cpp\
     experiment.cpp \
     qcustomplot.cpp \
     environmentmodel.cpp \
-    environmentdelegate.cpp
+    environmentdelegate.cpp \
+    dataexplorer.cpp
 
 HEADERS  += odroidreader.h \
     ipvalidator.h \
@@ -28,6 +29,8 @@ HEADERS  += odroidreader.h \
     qcustomplot.h \
     simplevalue.h \
     environmentmodel.h \
-    environmentdelegate.h
+    environmentdelegate.h \
+    dataexplorer.h
 
-FORMS    += odroidreader.ui
+FORMS    += odroidreader.ui \
+    dataexplorer.ui

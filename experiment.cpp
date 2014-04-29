@@ -5,23 +5,24 @@
 Experiment::Experiment()
 {}
 
-Experiment::Experiment(QJsonObject& jo)
+Experiment::Experiment(QJsonObject& jo, std::vector<Datapoint<double>*> *data)
+	: wasRun(false), data(data)
 {
-	title = jo["title"].toString().toStdString();
-	prepare = jo["prepare"].toString().toStdString();
-	cleanup = jo["cleanup"].toString().toStdString();
-	command = jo["command"].toString().toStdString();
+	title = jo["title"].toString();
+	prepare = jo["prepare"].toString();
+	cleanup = jo["cleanup"].toString();
+	command = jo["command"].toString();
 	QJsonArray ja = jo["environments"].toArray();
 	for (int i = 0; i < ja.size(); i++) {
 		const QJsonObject& o = ja.at(i).toObject();
 		Experiment::Environment e;
-		e.label = o["label"].toString().toStdString();
+		e.label = o["label"].toString();
 		e.big = o["big"].toBool();
 		e.little = o["little"].toBool();
 		e.freq =  o["frequency"].toInt();
 		e.freq_max = o["frequency_max"].toInt();
 		e.freq_min = o["frequency_min"].toInt();
-		e.governor = o["governor"].toString().toStdString();
+		e.governor = o["governor"].toString();
 		environments.push_back(e);
 	}
 	cooldown_time = jo["cooldown_time"].toInt();
@@ -29,20 +30,20 @@ Experiment::Experiment(QJsonObject& jo)
 }
 
 void Experiment::write(QJsonObject& jo) const {
-	jo["title"] = QString::fromStdString(title);
-	jo["prepare"] = QString::fromStdString(prepare);
-	jo["cleanup"] = QString::fromStdString(cleanup);
-	jo["command"] = QString::fromStdString(command);
+	jo["title"] = title;
+	jo["prepare"] = prepare;
+	jo["cleanup"] = cleanup;
+	jo["command"] = command;
 	QJsonArray envs;
 	for (const Experiment::Environment &e : environments) {
 		QJsonObject o;
 		o["big"] = environments.front().big;
 		o["little"] = environments.front().big;
-		o["label"] = QString::fromStdString(e.label);
+		o["label"] = e.label;
 		o["frequency"] = static_cast<qint64>(e.freq);
 		o["frequency_max"] = static_cast<qint64>(e.freq_max);
 		o["frequency_min"] = static_cast<qint64>(e.freq_min);
-		o["governor"] = QString::fromStdString(e.governor);
+		o["governor"] = e.governor;
 		envs.append(o);
 	}
 	jo["environments"] = envs;
@@ -50,20 +51,23 @@ void Experiment::write(QJsonObject& jo) const {
 	jo["tail_time"] = static_cast<qint64>(tail_time);
 }
 
-std::string Experiment::prepareMeasurement(float) {
+QString Experiment::prepareMeasurement(float) {
 	return prepare;
 }
 
-std::string Experiment::startMeasurement(double time,int run) {
+QString Experiment::startMeasurement(double time,int run) {
 	currentRun = run;
 	environments[run].runs.push_back(std::pair<double,double>(time,time));
 	return command;
 }
 
-std::string Experiment::cleanupMeasurement(float time) {
+QString Experiment::cleanupMeasurement(float time) {
 	environments[currentRun].runs.back().second = time;
+	wasRun = true;
 	return cleanup;
 }
+
+bool Experiment::hasData() { return wasRun; }
 
 QString Experiment::Environment::description() const {
 	QString desc("%1 MHz[%2-%3 MHz]@%4 -> %5");
@@ -73,26 +77,7 @@ QString Experiment::Environment::description() const {
 	} else {
 		bl = big?"big":"LITTLE";
 	}
-	return desc.arg(QString::number(freq),QString::number(freq_min),QString::number(freq_max),QString::fromStdString(governor),bl);
+	return desc.arg(QString::number(freq),QString::number(freq_min),QString::number(freq_max),governor,bl);
 }
 
 void Experiment::finishedCleanup(float) {}
-
-int Experiment::rowCount(const QModelIndex &) const {
-	return environments.size();
-}
-
-int Experiment::columnCount(const QModelIndex &) const {
-	return 6;
-}
-
-QVariant Experiment::data(const QModelIndex &index, int role) const {
-	if (role == Qt::DisplayRole) {
-		switch (index.column()) {
-			case 0: return environments.at(index.row()).freq;
-		}
-
-		return QString("Row %1, Col %2").arg(index.row()+1).arg(index.column()+1);
-	}
-	return QVariant();
-}

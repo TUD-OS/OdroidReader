@@ -37,11 +37,11 @@ QVariant EnvironmentModel::data(const QModelIndex &index, int role) const {
 		break;
 	  case Qt::DisplayRole:
 		switch (index.column()) {
-			case 0: return QString::fromStdString(e.label);
+			case 0: return e.label;
 			case 1: return e.freq;
 			case 2: return e.freq_min;
 			case 3: return e.freq_max;
-			case 4: return QString::fromStdString(e.governor);
+			case 4: return e.governor;
 			default: return QVariant();
 		}
 	  case Qt::CheckStateRole:
@@ -61,11 +61,11 @@ bool EnvironmentModel::setData(const QModelIndex &index, const QVariant &value, 
 
 	  case Qt::EditRole:
 		switch (index.column()) {
-		  case 0: e.label = value.toString().toStdString(); break;
+		  case 0: e.label = value.toString(); break;
 		  case 1: e.freq = value.toInt(); break;
 		  case 2: e.freq_min = value.toInt(); break;
 		  case 3: e.freq_max = value.toInt(); break;
-		  case 4: e.governor = value.toString().toStdString(); break;
+		  case 4: e.governor = value.toString(); break;
 		  default: return false;
 		}
 	  case Qt::CheckStateRole:
