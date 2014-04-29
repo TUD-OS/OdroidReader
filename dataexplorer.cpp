@@ -19,34 +19,64 @@ DataExplorer::~DataExplorer()
 	delete ui;
 }
 
+void DataExplorer::updateDetails() {
+    ui->runPlot->clearPlottables();
+    qDebug() << "Details";
+    int colid = 0;
+    for (QCPAbstractPlottable *p : ui->selectEnvironment->selectedPlottables()) {
+        int unitid = p->property("UID").toInt();
+        int envid = p->property("EID").toInt();
+        SimpleValue<double> v = exp->environments.at(envid).run(unitid,ui->runNo->value(),*exp);
+        QVector<double> values;
+        QVector<double> keys;
+        for (QPair<double,double> pair : v.values()) {
+            values.append(pair.second);
+            keys.append(pair.first);
+        }
+        QCPGraph *g = ui->runPlot->addGraph();
+        g->setPen(origcols[colid++%origcols.size()]);
+        qDebug() << "Setting" << keys.size() << "Datapoints";
+        g->setData(keys,values);
+    }
+    ui->runPlot->rescaleAxes();
+    if (ui->axisFromZero->isChecked())
+        ui->runPlot->yAxis->setRangeLower(0);
+    ui->runPlot->replot();
+}
+
 void DataExplorer::updateEnvironment() {
 	ui->selectEnvironment->clearPlottables();
 	int idx = 0;
+    qDebug() << "Starting";
 	for (QCPAbstractPlottable *p : ui->selectMetric->selectedPlottables()) {
 		int unit = p->property("UID").toInt();
 		QVector<double> ticks;
-		QVector<QString> labels;
+        QVector<QString> labels;
+        int eid = 0;
 		for (const Experiment::Environment& e : exp->environments) {
 			SimpleValue<double> vals = e.aggregate(unit,*exp);
 			QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectEnvironment->xAxis,ui->selectEnvironment->yAxis);
 			b->setData(idx,vals.min(),vals.quantile(0.25),vals.median(),vals.quantile(0.75),vals.max());
+            b->setProperty("UID",unit);
+            b->setProperty("EID",eid++);
 			ui->selectEnvironment->addPlottable(b);
 			labels.append(QString("%1 @ %2").arg(exp->data->at(unit)->name(),e.label));
 			qDebug() << "Added " << labels.back();
 			ticks.append(idx++);
 		}
-		ui->selectEnvironment->xAxis->setTickVector(ticks);
-		ui->selectEnvironment->xAxis->setTickVectorLabels(labels);
 		ui->selectEnvironment->xAxis->setAutoTicks(false);
 		ui->selectEnvironment->xAxis->setAutoTickLabels(false);
 		ui->selectEnvironment->xAxis->setSubTickCount(0);
 		ui->selectEnvironment->xAxis->setTickLength(0, 4);
 		ui->selectEnvironment->xAxis->setTickLabelRotation(40);
-		ui->selectEnvironment->setInteractions(QCP::iMultiSelect | QCP::iSelectPlottables);
+        ui->selectEnvironment->xAxis->setTickVector(ticks);
+        ui->selectEnvironment->xAxis->setTickVectorLabels(labels);
+        ui->selectEnvironment->setInteractions(QCP::iMultiSelect | QCP::iSelectPlottables);
 	}
 	ui->selectEnvironment->rescaleAxes();
 	ui->selectEnvironment->xAxis->scaleRange(1.1, ui->selectEnvironment->xAxis->range().center());
-	if (ui->axisFromZero->isChecked())
+    connect(ui->selectEnvironment,SIGNAL(selectionChangedByUser()), this, SLOT(updateDetails()));
+    if (ui->axisFromZero->isChecked())
 		ui->selectEnvironment->yAxis->setRangeLower(0);
 	ui->selectEnvironment->replot();
 }

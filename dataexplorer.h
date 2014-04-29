@@ -26,6 +26,7 @@ public slots:
 	void on_axisFromZero_toggled(bool);
 	void on_dispUnit_currentIndexChanged(int);
 	void updateEnvironment();
+    void updateDetails();
 };
 
 #endif // DATAEXPLORER_H

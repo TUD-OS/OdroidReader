@@ -121,7 +121,7 @@ void OdroidReader::setupExperiment(Experiment::Environment const &run) {
 	sock->write("SETUP\n");
 	QString gov = run.governor;
 	sock->write(gov.append("\n").toStdString().c_str());
-	qDebug() << "Governor is:" << gov;
+    qDebug() << "Governor is:" << gov << run.freq << run.freq_min << "-" << run.freq_max;
 	if (gov == "ondemand\n")
 		sock->write(std::to_string(run.freq).append("000\n").c_str());
 	sock->write(std::to_string(run.freq_min).append("000\n").c_str());
