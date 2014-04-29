@@ -17,21 +17,14 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_14">
      <item>
+      <widget class="QLabel" name="label">
+       <property name="text">
+        <string>Unit:</string>
+       </property>
+      </widget>
+     </item>
+     <item>
       <widget class="QComboBox" name="dispUnit"/>
-     </item>
-     <item>
-      <widget class="QLabel" name="label_16">
-       <property name="text">
-        <string>Values</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QCheckBox" name="aggregate">
-       <property name="text">
-        <string>Aggregate Averages of Runs</string>
-       </property>
-      </widget>
      </item>
      <item>
       <widget class="QCheckBox" name="axisFromZero">

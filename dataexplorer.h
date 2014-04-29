@@ -25,7 +25,7 @@ public slots:
 	void on_aggregate_toggled(bool checked);
 	void on_axisFromZero_toggled(bool);
 	void on_dispUnit_currentIndexChanged(int);
-	void updateDetail();
+	void updateEnvironment();
 };
 
 #endif // DATAEXPLORER_H

@@ -22,6 +22,8 @@ private:
 public:
 	Value(DatapointBase& parent) : parent(parent){}
 	Value(Value const& orig, double from, double to) : SimpleValue<T>(orig,from,to), parent(orig.parent) {}
+	Value(const Value& orig) = delete;
+	Value& operator=(const Value& orig) = delete;
 
 	void add(T value, double time) {
 		if (_values.empty()) {
@@ -31,7 +33,7 @@ public:
 			parent.last_item->setText(QString::number(value));
 		}
 		SimpleValue<T>::add(value,time);
-		_values.push_back(std::pair<double,T>(time,value));
+		_values.append(QPair<double,T>(time,value));
 		auto low = std::lower_bound(_sorted.begin(),_sorted.end(),value);
 		_sorted.insert(low,value);
 		if (value == _max) {
@@ -53,7 +55,7 @@ public:
 	}
 
 	//Adds the value and returns the new average
-	std::vector<std::pair<double,T>> values() { return _values; }
+	QVector<QPair<double,T>> values() { return _values; }
 };
 
 #endif // VALUE_H

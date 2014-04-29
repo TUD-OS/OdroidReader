@@ -1,7 +1,6 @@
 #ifndef SIMPLEVALUE_H
 #define SIMPLEVALUE_H
 
-#include <vector>
 #include <algorithm>
 #include <datapoint.h>
 #include <QTableWidgetItem>
@@ -10,19 +9,37 @@ template<typename T>
 class SimpleValue
 {
 protected:
-	std::vector<std::pair<double,T>> _values;
-	std::vector<T> _sorted;
+	QVector<QPair<double,T>> _values;
+	QVector<T> _sorted;
 	T _min,_max,_avg;
 
 public:
 	SimpleValue() { }
-	SimpleValue(const SimpleValue& dp) = delete;
-	SimpleValue& operator=(const SimpleValue& dp) = delete;
+	SimpleValue(const SimpleValue& orig) {
+		_values = orig._values;
+		_min = orig._min;
+		_max = orig._max;
+		_avg = orig._avg;
+		_sorted = orig._sorted;
+	}
+
+	SimpleValue& operator=(const SimpleValue& dp) {
+		_values = dp._values;
+		_min = dp._min;
+		_max = dp._max;
+		_avg = dp._avg;
+		_sorted = dp._sorted;
+		return *this;
+	}
 	SimpleValue(SimpleValue const& orig, double from, double to) {
-		for (std::pair<double,T> p : orig._values)
+		for (QPair<double,T> p : orig._values)
 			if (p.first >= from and p.first <= to) {
 				add(p.second,p.first);
 			}
+	}
+	void extend(const SimpleValue &by) {
+		for (QPair<double,T> p : by._values)
+				add(p.second,p.first);
 	}
 
 	T min() const { return _min; }
@@ -47,7 +64,7 @@ public:
 	void add(T value, double time) {
 		if (_values.empty())
 			_max = _min = _avg = value;
-		_values.push_back(std::pair<double,T>(time,value));
+		_values.append(QPair<double,T>(time,value));
 		auto low = std::lower_bound(_sorted.begin(),_sorted.end(),value);
 		_sorted.insert(low,value);
 		if (value > _max) _max = value;
@@ -56,6 +73,6 @@ public:
 		_avg += (value-_avg)/_values.size();
 	}
 		//Adds the value and returns the new average
-	std::vector<std::pair<double,T>> values() { return _values; }
+	const QVector<QPair<double,T>> values() const { return _values; }
 };
 #endif // SIMPLEVALUE_H

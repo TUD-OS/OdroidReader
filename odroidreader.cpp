@@ -28,7 +28,7 @@ QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254)
 					  QColor(104,115,15),QColor(133,3,43),QColor(188,186,111),QColor(168,115,19),QColor(63,184,67)});
 QList<QColor> colors;
 
-std::vector<Datapoint<double>*> OdroidReader::descs;
+QVector<Datapoint<double>*> OdroidReader::descs;
 
 OdroidReader::OdroidReader(QWidget *parent) :
 	QMainWindow(parent), executed(false), es(ExperimentState::Idle),
@@ -187,7 +187,7 @@ void OdroidReader::readData() {
 				executed = false;
 				qDebug() << "Stepping" << descs.at(1)->value().last() << descs.at(1)->value().changed();
 				if (es == ExperimentState::Execute)
-					QTimer::singleShot(experiments.back().cooldown_time*1000,this,SLOT(runExperiments()));
+					QTimer::singleShot(toRun.back()->cooldown_time*1000,this,SLOT(runExperiments()));
 				else
 					runExperiments();
 			}
@@ -316,7 +316,7 @@ void OdroidReader::on_addExperiment_clicked()
 	experiment.prepare = ui->exp_prepare->text();
 	experiment.cooldown_time = ui->cooldown->value();
 	experiment.tail_time = ui->tail->value();
-	experiment.environments.push_back(run);
+	experiment.environments.append(run);
 	experiments.append(experiment);
 	ui->addExperiment->setEnabled(false);
 	updateExperiments();
@@ -377,10 +377,10 @@ void OdroidReader::runExperiments() {
 				break;
 			}
 		case ExperimentState::Prepare:
-			cmd = toRun.back()->startMeasurement(lastTime,0); //TODO
+			cmd = toRun.back()->startMeasurement(lastTime,lastEnv);
 			if (cmd.length() > 0) {
 				qDebug() << "Configure";
-				setupExperiment(toRun.back()->environments.back());
+				setupExperiment(toRun.back()->environments.at(lastEnv));
 				qDebug() << "Start";
 				runCommand(cmd);
 				es = ExperimentState::Execute;
@@ -397,7 +397,9 @@ void OdroidReader::runExperiments() {
 		case ExperimentState::Cleanup:
 			toRun.back()->finishedCleanup(lastTime);
 			if (++repetition == ui->repetitions->value()) {
-				toRun.pop_back();
+				if (++lastEnv == toRun.back()->environments.size()) {
+					toRun.pop_back();
+				}
 				repetition = 0;
 			}
 			es = ExperimentState::Idle;
@@ -427,6 +429,7 @@ void OdroidReader::on_runSelected_clicked()
 	es = ExperimentState::Idle;
 	ui->experiments->setEnabled(false);
 	repetition = 0;
+	lastEnv = 0;
 	runExperiments();
 }
 

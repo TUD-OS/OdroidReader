@@ -6,7 +6,6 @@
 #include "experiment.h"
 #include <QVector>
 #include <QPointF>
-#include <vector>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <QtNetwork/QTcpSocket>
@@ -40,7 +39,7 @@ class OdroidReader : public QMainWindow
 
 public:
   explicit OdroidReader(QWidget *parent = 0);
-  static std::vector<Datapoint<double>*> descs;
+  static QVector<Datapoint<double>*> descs;
   ~OdroidReader();
 
 private slots:
@@ -73,6 +72,7 @@ private:
   void runCommand(QString cmd);
   double lastTime;
   int repetition;
+  int lastEnv;
   bool executed;
   ExperimentState es;
   Experiment const* curExp;

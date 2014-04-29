@@ -5,7 +5,7 @@
 Experiment::Experiment()
 {}
 
-Experiment::Experiment(QJsonObject& jo, std::vector<Datapoint<double>*> *data)
+Experiment::Experiment(QJsonObject& jo, QVector<Datapoint<double>*> *data)
 	: wasRun(false), data(data)
 {
 	title = jo["title"].toString();
@@ -57,7 +57,7 @@ QString Experiment::prepareMeasurement(float) {
 
 QString Experiment::startMeasurement(double time,int run) {
 	currentRun = run;
-	environments[run].runs.push_back(std::pair<double,double>(time,time));
+	environments[run].runs.append(QPair<double,double>(time,time));
 	return command;
 }
 
@@ -81,3 +81,23 @@ QString Experiment::Environment::description() const {
 }
 
 void Experiment::finishedCleanup(float) {}
+
+SimpleValue<double> Experiment::Environment::aggregate(int unit, const Experiment &e) const {
+	SimpleValue<double> allRuns;
+	for (int i = 0; i < runs.size(); i++) {
+		allRuns.extend(run(unit,i,e));
+	}
+	return allRuns;
+}
+
+SimpleValue<double> Experiment::aggregate(int unit, const Experiment &e) const {
+	SimpleValue<double> allEnvironments;
+	for (const Environment &env : environments) {
+		allEnvironments.extend(env.aggregate(unit,e));
+	}
+	return allEnvironments;
+}
+
+SimpleValue<double> Experiment::Environment::run(int unit, int run, const Experiment &e) const {
+	return SimpleValue<double>(e.data->at(unit)->value(),runs.at(run).first,runs.at(run).second);
+}
