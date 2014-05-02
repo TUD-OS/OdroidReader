@@ -24,7 +24,8 @@ public:
 			QVector<QPair<double,double>> runs; //All datapoints for all repetitions
 			QString description() const;
 			SimpleValue<double> aggregate(int unit, const Experiment& e) const;
-			SimpleValue<double> run(int unit, int run, const Experiment &e) const;
+			SimpleValue<double> integral(int unit, const Experiment& e) const;
+			SimpleValue<double> run(int unit, int run, const Experiment &e, bool normalize = false) const;
 	};
 
 	QString title, prepare, cleanup, command;

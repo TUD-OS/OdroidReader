@@ -10,22 +10,30 @@
     <height>531</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>400</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
+    <widget class="QPushButton" name="pushButton">
+     <property name="text">
+      <string/>
+     </property>
+     <property name="icon">
+      <iconset theme="list-remove">
+       <normaloff/>
+      </iconset>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_14">
-     <item>
-      <widget class="QLabel" name="label">
-       <property name="text">
-        <string>Unit:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QComboBox" name="dispUnit"/>
-     </item>
      <item>
       <widget class="QCheckBox" name="axisFromZero">
        <property name="text">
@@ -33,41 +41,124 @@
        </property>
       </widget>
      </item>
-     <item>
-      <spacer name="horizontalSpacer_3">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item>
-      <widget class="QLabel" name="label_4">
-       <property name="text">
-        <string>Run:</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QSpinBox" name="runNo"/>
-     </item>
     </layout>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_15">
      <item>
-      <widget class="QCustomPlot" name="selectMetric" native="true"/>
+      <widget class="QGroupBox" name="groupBox">
+       <property name="title">
+        <string>Sensors</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_2">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout">
+          <item>
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Unit:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="dispUnit"/>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QCustomPlot" name="selectMetric" native="true"/>
+        </item>
+       </layout>
+      </widget>
      </item>
      <item>
-      <widget class="QCustomPlot" name="selectEnvironment" native="true"/>
+      <widget class="QGroupBox" name="groupBox_2">
+       <property name="title">
+        <string>Environments</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QWidget" name="widget" native="true">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>23</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QCustomPlot" name="selectEnvironment" native="true"/>
+        </item>
+       </layout>
+      </widget>
      </item>
      <item>
-      <widget class="QCustomPlot" name="runPlot" native="true"/>
+      <widget class="QGroupBox" name="groupBox_3">
+       <property name="title">
+        <string>Details</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <item>
+           <widget class="QLabel" name="label_2">
+            <property name="text">
+             <string>Display</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="detailType">
+            <item>
+             <property name="text">
+              <string>Values</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Integral values</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>Aggregates</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string/>
+             </property>
+            </item>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_4">
+            <property name="text">
+             <string>Run:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QSpinBox" name="runNo"/>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QCustomPlot" name="runPlot" native="true"/>
+        </item>
+       </layout>
+      </widget>
      </item>
     </layout>
    </item>

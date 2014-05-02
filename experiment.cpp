@@ -82,6 +82,26 @@ QString Experiment::Environment::description() const {
 
 void Experiment::finishedCleanup(float) {}
 
+SimpleValue<double> Experiment::Environment::integral(int unit, const Experiment &e) const {
+	SimpleValue<double> allRuns;
+	for (int i = 0; i < runs.size(); i++) {
+		double value = -1;
+		QPair<double,double> last;
+		for (const QPair<double,double> &p : run(unit,i,e).values()) {
+			if (value == -1) {
+				last = p;
+				value = 0;
+				continue;
+			}
+			double t = p.first-last.first;
+			value += t*last.second+t*(p.second-last.second)/2;
+			last = p;
+		}
+		allRuns.add(value,0);
+	}
+	return allRuns;
+}
+
 SimpleValue<double> Experiment::Environment::aggregate(int unit, const Experiment &e) const {
 	SimpleValue<double> allRuns;
 	for (int i = 0; i < runs.size(); i++) {
@@ -98,6 +118,6 @@ SimpleValue<double> Experiment::aggregate(int unit, const Experiment &e) const {
 	return allEnvironments;
 }
 
-SimpleValue<double> Experiment::Environment::run(int unit, int run, const Experiment &e) const {
-	return SimpleValue<double>(e.data->at(unit)->value(),runs.at(run).first,runs.at(run).second);
+SimpleValue<double> Experiment::Environment::run(int unit, int run, const Experiment &e, bool normalize) const {
+	return SimpleValue<double>(e.data->at(unit)->value(),runs.at(run).first,runs.at(run).second,normalize);
 }

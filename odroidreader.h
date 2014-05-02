@@ -13,6 +13,7 @@
 #include "qcustomplot.h"
 #include <QtEndian>
 #include <QListWidgetItem>
+#include <dataexplorer.h>
 
 typedef enum class {
 	DESC = 0,
@@ -43,7 +44,7 @@ public:
   ~OdroidReader();
 
 private slots:
-  void on_connect_clicked();
+  void removeDataExplorer(DataExplorer* de);
   void connected();
   void connerror(QAbstractSocket::SocketError);
   void updateCurve(int,int);
@@ -62,7 +63,9 @@ private slots:
   void removeEnvironment(QModelIndex idx);
   void on_envAdd_clicked();
 
-  void on_expSelect_currentIndexChanged(int index);
+  void on_pushButton_clicked();
+
+  void on_addConnection_clicked();
 
 private:
   void enableControls(bool status);

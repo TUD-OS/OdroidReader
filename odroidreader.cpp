@@ -6,11 +6,9 @@
 #include <QDebug>
 #include <QtNetwork/QTcpSocket>
 #include <QMessageBox>
-#include <QtEndian>
 #include <cassert>
 #include <QColor>
 #include <limits>
-#include <QList>
 #include <QFile>
 #include "qcustomplot.h"
 #include <QDateTime>
@@ -18,10 +16,9 @@
 #include <QJsonObject>
 #include "environmentmodel.h"
 #include "environmentdelegate.h"
-//#include <ui_dataexplorer.h>
 #include <QJsonArray>
 
-Q_DECLARE_METATYPE(EnvironmentModel*)
+//Q_DECLARE_METATYPE(EnvironmentModel*)
 Q_DECLARE_METATYPE(Experiment*)
 
 QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254),QColor(91,53,40),QColor(133,196,77),
@@ -68,9 +65,7 @@ OdroidReader::~OdroidReader()
 }
 
 void OdroidReader::enableControls(bool status = true) {
-	ui->connect->setEnabled(status);
-	ui->repetitions->setEnabled(status); //TODO: Must this really be disabled?
-	ui->ip->setEnabled(status);
+	ui->sample->setEnabled(false);
 }
 
 void OdroidReader::updateCurve(int row, int col) {
@@ -122,7 +117,7 @@ void OdroidReader::setupExperiment(Experiment::Environment const &run) {
 	QString gov = run.governor;
 	sock->write(gov.append("\n").toStdString().c_str());
     qDebug() << "Governor is:" << gov << run.freq << run.freq_min << "-" << run.freq_max;
-	if (gov == "ondemand\n")
+	if (gov == "userspace\n")
 		sock->write(std::to_string(run.freq).append("000\n").c_str());
 	sock->write(std::to_string(run.freq_min).append("000\n").c_str());
 	sock->write(std::to_string(run.freq_max).append("000\n").c_str());
@@ -139,8 +134,6 @@ void OdroidReader::runCommand(QString cmd) {
 void OdroidReader::connected() {
 	colors = origcols;
 	qDebug() << "Connected";
-	ui->connect->setText("Disconnect");
-	ui->connect->setEnabled(true);
 	descs.clear();
 	ui->sensors->clearContents();
 	sock->write("DESC\n");
@@ -265,31 +258,7 @@ void OdroidReader::connerror(QAbstractSocket::SocketError err) {
 		delete ts.device();
 		ts.setDevice(nullptr);
 	}
-	ui->connect->setText("Connect");
 	enableControls();
-}
-
-void OdroidReader::on_connect_clicked()
-{
-	qDebug() << "Connecting";
-	if (sock && sock->isOpen()) {
-		qDebug() << "Closing";
-		tmr.stop();
-		sock->close();
-		sock->readAll();
-		delete(sock);
-		ui->connect->setText("Connect");
-		enableControls();
-		sock = nullptr;
-		return;
-	}
-	enableControls(false);
-	if (sock != nullptr) delete(sock);
-	sock = new QTcpSocket();
-	sock->connect(sock,SIGNAL(connected()),this,SLOT(connected()));
-	sock->connect(sock,SIGNAL(error(QAbstractSocket::SocketError)),this,SLOT(connerror(QAbstractSocket::SocketError)));
-	sock->connect(sock,SIGNAL(readyRead()),this,SLOT(readData()));
-	sock->connectToHost(ui->ip->text(),1234);
 }
 
 quint32 OdroidReader::freq2Int(QString s) {
@@ -461,7 +430,38 @@ void OdroidReader::removeEnvironment(QModelIndex idx) {
 	if (em) em->removeRow(idx.row());
 }
 
-void OdroidReader::on_expSelect_currentIndexChanged(int)
+void OdroidReader::on_pushButton_clicked()
 {
-	ui->dataExplorer->setExperiment(ui->expSelect->currentData().value<Experiment*>());
+	if (ui->expSelect->currentData().value<Experiment*>()) {
+		DataExplorer* de = new DataExplorer(ui->scrollAreaWidgetContents);
+		de->setExperiment(ui->expSelect->currentData().value<Experiment*>());
+		ui->scrollAreaWidgetContents->layout()->addWidget(de);
+		connect(de,SIGNAL(removeMe(DataExplorer*)),this,SLOT(removeDataExplorer(DataExplorer*)));
+	}
+}
+
+void OdroidReader::removeDataExplorer(DataExplorer *de) {
+	ui->scrollAreaWidgetContents->layout()->removeWidget(de);
+}
+
+void OdroidReader::on_addConnection_clicked()
+{
+	qDebug() << "Connecting";
+	if (sock && sock->isOpen()) {
+		qDebug() << "Closing";
+		tmr.stop();
+		sock->close();
+		sock->readAll();
+		delete(sock);
+		enableControls();
+		sock = nullptr;
+		return;
+	}
+	enableControls(false);
+	if (sock != nullptr) delete(sock);
+	sock = new QTcpSocket();
+	sock->connect(sock,SIGNAL(connected()),this,SLOT(connected()));
+	sock->connect(sock,SIGNAL(error(QAbstractSocket::SocketError)),this,SLOT(connerror(QAbstractSocket::SocketError)));
+	sock->connect(sock,SIGNAL(readyRead()),this,SLOT(readData()));
+	sock->connectToHost(ui->ip->text(),1234);
 }

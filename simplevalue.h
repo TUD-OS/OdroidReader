@@ -31,10 +31,10 @@ public:
 		_sorted = dp._sorted;
 		return *this;
 	}
-	SimpleValue(SimpleValue const& orig, double from, double to) {
+	SimpleValue(SimpleValue const& orig, double from, double to, bool normalize = false) {
 		for (QPair<double,T> p : orig._values)
 			if (p.first >= from and p.first <= to) {
-				add(p.second,p.first);
+				add(p.second,(normalize)?p.first-from:p.first);
 			}
 	}
 	void extend(const SimpleValue &by) {
