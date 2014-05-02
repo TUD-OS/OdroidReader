@@ -17,8 +17,8 @@
 #include "environmentmodel.h"
 #include "environmentdelegate.h"
 #include <QJsonArray>
+#include <Sources/networksource.h>
 
-//Q_DECLARE_METATYPE(EnvironmentModel*)
 Q_DECLARE_METATYPE(Experiment*)
 
 QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254),QColor(91,53,40),QColor(133,196,77),
@@ -445,6 +445,14 @@ void OdroidReader::removeDataExplorer(DataExplorer *de) {
 }
 
 void OdroidReader::on_addConnection_clicked()
+{
+	NetworkSource *ns = new NetworkSource(ui->sourceName->text(),ui->ip->text(),ui->port->value());
+	sources.append(ns);
+	connect(ui->startSampling,SIGNAL(clicked()),ns,SLOT(connect()));
+	ui->sourceList->addItem(QString("%1 @ %2:%3").arg(ns->name(),ns->address(),QString::number(ns->port())));
+}
+
+void OdroidReader::on_startSampling_clicked()
 {
 	qDebug() << "Connecting";
 	if (sock && sock->isOpen()) {

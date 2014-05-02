@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 #include <QJsonObject>
-#include "datapoint.h"
+#include "Data/datapoint.h"
 
 class Experiment
 {

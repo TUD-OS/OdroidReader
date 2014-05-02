@@ -9,11 +9,12 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <QtNetwork/QTcpSocket>
-#include "datapoint.h"
+#include "Data/datapoint.h"
 #include "qcustomplot.h"
 #include <QtEndian>
 #include <QListWidgetItem>
-#include <dataexplorer.h>
+#include <ui/dataexplorer.h>
+#include <Data/datasource.h>
 
 typedef enum class {
 	DESC = 0,
@@ -67,6 +68,8 @@ private slots:
 
   void on_addConnection_clicked();
 
+  void on_startSampling_clicked();
+
 private:
   void enableControls(bool status);
   void updateSensors();
@@ -93,6 +96,7 @@ private:
   QVector<Experiment> experiments;
   Experiment* currentExp;
   Experiment::Environment* currentEnv;
+  QVector<DataSource*> sources;
 };
 
 #endif // ODROIDREADER_H
