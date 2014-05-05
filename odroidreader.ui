@@ -247,13 +247,13 @@
     <item>
      <widget class="QTabWidget" name="expResult">
       <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="MinimumExpanding">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>2</number>
       </property>
       <widget class="QWidget" name="overview">
        <attribute name="title">
@@ -624,7 +624,7 @@
                <x>0</x>
                <y>0</y>
                <width>891</width>
-               <height>569</height>
+               <height>461</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_7"/>
@@ -699,6 +699,22 @@
     <hint type="destinationlabel">
      <x>355</x>
      <y>153</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>sourceName</sender>
+   <signal>returnPressed()</signal>
+   <receiver>addConnection</receiver>
+   <slot>click()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>251</x>
+     <y>97</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>370</x>
+     <y>155</y>
     </hint>
    </hints>
   </connection>

@@ -16,6 +16,7 @@ public:
 	NetworkSource(QString name, QString address, quint16 port, QObject *parent = 0);
 	inline const QString& address() { return _address; }
 	inline quint16 port() { return _port; }
+	inline virtual QString descriptor() { return QString("[Net] %1 @ %2:%3").arg(_name,_address,QString(_port)); }
 signals:
 
 public slots:

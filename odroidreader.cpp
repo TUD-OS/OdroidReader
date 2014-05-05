@@ -65,7 +65,7 @@ OdroidReader::~OdroidReader()
 }
 
 void OdroidReader::enableControls(bool status = true) {
-	ui->sample->setEnabled(false);
+	ui->sample->setEnabled(status);
 }
 
 void OdroidReader::updateCurve(int row, int col) {
@@ -100,7 +100,7 @@ void OdroidReader::sendGet() {
 void OdroidReader::updateSensors() {
 	ui->sensors->setRowCount(descs.size());
 
-	for (size_t i = 0; i < descs.size(); i++) {
+	for (int i = 0; i < descs.size(); i++) {
 		ui->sensors->setItem(i,0,new QTableWidgetItem(""));
 		ui->sensors->item(i,0)->setCheckState(Qt::Unchecked);
 		ui->sensors->setItem(i,1,descs[i]->name_item);
@@ -149,7 +149,7 @@ void OdroidReader::readData() {
 			lastTime = networkDecode<quint32>(sock->read(4));
 			lastTime += networkDecode<quint32>(sock->read(4))/1000000000.0;
 
-			for (size_t i = 0; i < descs.size(); i++) {
+			for (int i = 0; i < descs.size(); i++) {
 				Datapoint<double>* d = descs.at(i);
 
 				switch (d->type()) {
@@ -449,7 +449,7 @@ void OdroidReader::on_addConnection_clicked()
 	NetworkSource *ns = new NetworkSource(ui->sourceName->text(),ui->ip->text(),ui->port->value());
 	sources.append(ns);
 	connect(ui->startSampling,SIGNAL(clicked()),ns,SLOT(connect()));
-	ui->sourceList->addItem(QString("%1 @ %2:%3").arg(ns->name(),ns->address(),QString::number(ns->port())));
+	ui->sourceList->addItem(ns->descriptor());
 }
 
 void OdroidReader::on_startSampling_clicked()
