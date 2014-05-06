@@ -9,19 +9,20 @@
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <QtNetwork/QTcpSocket>
-#include "Data/datapoint.h"
+#include "Data/o_datapoint.h"
 #include "qcustomplot.h"
 #include <QtEndian>
 #include <QListWidgetItem>
 #include <ui/dataexplorer.h>
 #include <Data/datasource.h>
 #include <Data/datadescriptor.h>
+#include <Data/dataseries.h>
 
-typedef enum class {
-	DESC = 0,
-	GET = 1,
-	NONE = 99
-} Query;
+//typedef enum class {
+//	DESC = 0,
+//	GET = 1,
+//	NONE = 99
+//} Query;
 
 typedef enum class {
 	Prepare, Execute, Cleanup, Idle
@@ -31,10 +32,10 @@ namespace Ui {
   class OdroidReader;
 }
 
-template<typename T>
-T networkDecode(QByteArray const &ba) {
-	return qFromBigEndian<T>(reinterpret_cast<const uchar*>(ba.constData()));
-}
+//template<typename T>
+//T networkDecode(QByteArray const &ba) {
+//	return qFromBigEndian<T>(reinterpret_cast<const uchar*>(ba.constData()));
+//}
 
 class OdroidReader : public QMainWindow
 {
@@ -47,11 +48,11 @@ public:
 
 private slots:
   void removeDataExplorer(DataExplorer* de);
-  void connected();
-  void connerror(QAbstractSocket::SocketError);
+//  void connected();
+//  void connerror(QAbstractSocket::SocketError);
   void updateCurve(int,int);
-  void readData();
-  void sendGet();
+//  void readData();
+//  void sendGet();
   void on_addExperiment_clicked();
   void on_exp_name_textChanged(const QString &arg1);
   void on_listWidget_itemSelectionChanged();
@@ -60,7 +61,7 @@ private slots:
   void on_runSelected_clicked();
 
   void aboutToQuit();
-  void runExperiments();
+  //void runExperiments();
 
   void removeEnvironment(QModelIndex idx);
   void on_envAdd_clicked();
@@ -71,7 +72,7 @@ private slots:
 
   void on_startSampling_clicked();
 
-  void addDescriptors(const QVector<const DataDescriptor *> &descriptors);
+  void addDescriptors(QVector<const DataDescriptor *> descriptors);
 
 private:
   void enableControls(bool status);
@@ -79,7 +80,7 @@ private:
   void updateExperiments();
   void setupExperiment(const Experiment::Environment &run);
   void runCommand(QString cmd);
-  double lastTime;
+  //double lastTime;
   int repetition;
   int lastEnv;
   bool executed;
@@ -92,13 +93,14 @@ private:
   int sock_descriptor;
   struct sockaddr_in serv_addr;
   QTcpSocket *sock;
-  Query query;
+  //Query query;
   QTextStream ts;
-  quint32 packetSize;
+  //quint32 packetSize;
   QVector<QPointF> samples;
   QVector<Experiment> experiments;
   Experiment* currentExp;
   Experiment::Environment* currentEnv;
+  QVector<DataSeries*> data;
   QVector<const DataDescriptor*> descriptors;
   QVector<DataSource*> sources;
 };

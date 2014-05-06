@@ -2,7 +2,7 @@
 #define SIMPLEVALUE_H
 
 #include <algorithm>
-#include <Data/datapoint.h>
+#include <Data/o_datapoint.h>
 #include <QTableWidgetItem>
 
 template<typename T>

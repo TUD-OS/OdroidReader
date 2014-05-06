@@ -19,10 +19,11 @@ SOURCES += main.cpp\
     environmentmodel.cpp \
     environmentdelegate.cpp \
     Data/datadescriptor.cpp \
-    Data/datapoint.cpp \
     Data/datasource.cpp \
     ui/dataexplorer.cpp \
-    Sources/networksource.cpp
+    Sources/networksource.cpp \
+    Data/o_datapoint.cpp \
+    Data/dataseries.cpp
 
 HEADERS  += odroidreader.h \
     ipvalidator.h \
@@ -33,10 +34,11 @@ HEADERS  += odroidreader.h \
     environmentmodel.h \
     environmentdelegate.h \
     Data/datadescriptor.h \
-    Data/datapoint.h \
     Data/datasource.h \
     ui/dataexplorer.h \
-    Sources/networksource.h
+    Sources/networksource.h \
+    Data/o_datapoint.h \
+    Data/dataseries.h
 
 FORMS    += odroidreader.ui \
     ui/dataexplorer.ui
