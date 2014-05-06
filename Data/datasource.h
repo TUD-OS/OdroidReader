@@ -29,7 +29,7 @@ public slots:
 signals:
 	void dataReceived(QString source);
 	void descriptorsAvailable(QVector<const DataDescriptor*> descriptors);
-	void dataAvailable(double data); //TODO
+	void dataAvailable(const DataDescriptor* desc,double data, double time); //TODO
 	void connected();
 };
 

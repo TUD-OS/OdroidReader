@@ -34,6 +34,7 @@ public:
     inline virtual QString descriptor() { return QString("[Net] %1 @ %2:%3").arg(_name,_address,QString::number(_port)); }
 signals:
 	void descriptorsAvailable(QVector<const DataDescriptor*> descriptors);
+	void dataAvailable(const DataDescriptor* desc,double data, double time); //TODO
 
 public slots:
 	void conerror(QAbstractSocket::SocketError error);

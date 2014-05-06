@@ -419,6 +419,7 @@ void OdroidReader::on_addConnection_clicked()
 	sources.append(ns);
 	connect(ui->startSampling,SIGNAL(clicked()),ns,SLOT(start()));
 	connect(ns,SIGNAL(descriptorsAvailable(QVector<const DataDescriptor*>)),this,SLOT(addDescriptors(QVector<const DataDescriptor*>)));
+	connect(ns,SIGNAL(dataAvailable(const DataDescriptor*,double,double)),this,SLOT(addData(const DataDescriptor*,double,double)));
 	ui->sourceList->addItem(ns->descriptor());
 }
 
@@ -447,6 +448,10 @@ void OdroidReader::on_startSampling_clicked()
 #endif
 }
 
+void OdroidReader::addData(const DataDescriptor *desc, double data, double time) {
+	qDebug() << "Got Data: " << desc->str() << data;
+}
+
 void OdroidReader::addDescriptors(QVector<const DataDescriptor *> descs) {
 	qDebug() << "Found descriptors";
 	for (const DataDescriptor* d : descs) {
@@ -454,6 +459,10 @@ void OdroidReader::addDescriptors(QVector<const DataDescriptor *> descs) {
 			descriptors.resize(d->uid()+1);
 		descriptors[d->uid()] = d;
 		qDebug() << d->str();
+	}
+	assert(descriptors.size() >= data.size());
+	if (descriptors.size() > data.size()) {
+		data.resize(descriptors.size());
 	}
 	updateSensors();
 }

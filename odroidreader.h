@@ -73,6 +73,7 @@ private slots:
   void on_startSampling_clicked();
 
   void addDescriptors(QVector<const DataDescriptor *> descriptors);
+  void addData(const DataDescriptor* desc, double data, double time);
 
 private:
   void enableControls(bool status);

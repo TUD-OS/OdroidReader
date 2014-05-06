@@ -50,37 +50,36 @@ void NetworkSource::readData() {
 	quint32 val;
 	switch (query) {
 		case Query::GET: //Rework this!
-			assert(false || "Not yet :(");
-/*TODO			if (socket.bytesAvailable() < packetSize+8) return;
+			//assert(false || "Not yet :(");
+			if (socket.bytesAvailable() < packetSize+8) return;
 			assert(socket.bytesAvailable() == packetSize+8);
 			lastTime = networkDecode<quint32>(socket.read(4));
 			lastTime += networkDecode<quint32>(socket.read(4))/1000000000.0;
 
 			for (int i = 0; i < descs.size(); i++) {
-				Datapoint<double>* d = descs.at(i);
-
+				const DataDescriptor* d = descs.at(i);
 				switch (d->type()) {
-				  case FIELD_TYPE::BIGLITTLE:
-				  case FIELD_TYPE::CHAR:
-					d->addValue(*reinterpret_cast<const uchar*>(socket.read(1).constData()),lastTime);
+				  case DataDescriptor::Type::BIGLITTLE:
+				  case DataDescriptor::Type::CHAR:
+					emit dataAvailable(d,*reinterpret_cast<const uchar*>(socket.read(1).constData()),lastTime);
 					break;
-				  case FIELD_TYPE::FLOAT:
+				  case DataDescriptor::Type::FLOAT:
 					val = networkDecode<quint32>(socket.read(4));
-					d->addValue(*reinterpret_cast<float*>(&val),lastTime);
+					emit dataAvailable(d,*reinterpret_cast<float*>(&val),lastTime);
 					break;
-				  case FIELD_TYPE::UINT16T:
-					d->addValue(networkDecode<quint16>(socket.read(2)),lastTime);
+				  case DataDescriptor::Type::UINT16T:
+					emit dataAvailable(d,networkDecode<quint16>(socket.read(2)),lastTime);
 					break;
-				  case FIELD_TYPE::UINT32T:
-					d->addValue(networkDecode<quint32>(socket.read(4)),lastTime);
+				  case DataDescriptor::Type::UINT32T:
+					emit dataAvailable(d,networkDecode<quint32>(socket.read(4)),lastTime);
 					break;
 				  default:
 					qDebug() << "Error interpreting data " << i;
 				}
-				if (d->type() != FIELD_TYPE::BIGLITTLE)
-					ts << d->value().last() << ";";
+//				//TODO
+//				if (d->type() != FIELD_TYPE::BIGLITTLE)
+//					ts << d->value().last() << ";";
 			}
-			*/
 //			ui->globalPlot->rescaleAxes(true);
 //			ui->globalPlot->yAxis->scaleRange(1.2,ui->globalPlot->yAxis->range().center());
 //			ui->globalPlot->replot();
@@ -117,6 +116,8 @@ void NetworkSource::readData() {
 				qDebug() << "Done reading" << descs.size() << "Descriptors" << "(Data Size:" << packetSize << ")";
 				qRegisterMetaType<QVector<const DataDescriptor*>>("QVector<const DataDescriptor*>");
 				emit descriptorsAvailable(descs);
+				query = Query::GET;
+				socket.write("GET\n");
 				qDebug() << "Emitted!";
 				return;
 			}
