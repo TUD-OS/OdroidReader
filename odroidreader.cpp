@@ -37,10 +37,9 @@ OdroidReader::OdroidReader(QWidget *parent) :
 	ui->sensors->setColumnWidth(0,30);
 	ui->globalPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
-	connect(&tmr,SIGNAL(timeout()),this,SLOT(sendGet()));
-	connect(ui->sensors,SIGNAL(cellClicked(int,int)),this,SLOT(updateCurve(int,int)));
+    connect(&tmr,SIGNAL(timeout()),this,SLOT(sendGet()));
+    connect(ui->sensors,SIGNAL(cellClicked(int,int)),this,SLOT(updateCurve(int,int)));
 	connect(ui->environment,SIGNAL(clicked(QModelIndex)),this,SLOT(removeEnvironment(QModelIndex)));
-	//connect(ui->samplingInterval,SIGNAL(valueChanged(int)),&tmr,SLOT(setInterval(int)));
 	connect(qApp,SIGNAL(aboutToQuit()),this,SLOT(aboutToQuit()));
 
 	//Load state ...
@@ -454,7 +453,8 @@ void OdroidReader::on_addConnection_clicked()
 
 void OdroidReader::on_startSampling_clicked()
 {
-	qDebug() << "Connecting";
+#if 0 //Only for the backup mode where we do not have multi-source
+    qDebug() << "Connecting";
 	if (sock && sock->isOpen()) {
 		qDebug() << "Closing";
 		tmr.stop();
@@ -472,4 +472,12 @@ void OdroidReader::on_startSampling_clicked()
 	sock->connect(sock,SIGNAL(error(QAbstractSocket::SocketError)),this,SLOT(connerror(QAbstractSocket::SocketError)));
 	sock->connect(sock,SIGNAL(readyRead()),this,SLOT(readData()));
 	sock->connectToHost(ui->ip->text(),1234);
+#endif
+    for (DataSource *ds: sources) {
+        ds->connect();
+    }
+}
+
+void OdroidReader::addDescriptors(const QVector<const DataDescriptor*> &descs) {
+    for (auto d : descs) descriptors.append(d);
 }

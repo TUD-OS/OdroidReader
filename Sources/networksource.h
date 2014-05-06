@@ -19,7 +19,7 @@ public:
     inline virtual QString descriptor() { return QString("[Net] %1 @ %2:%3").arg(_name,_address,QString::number(_port)); }
 signals:
 
-public slots:
+protected:
 	virtual void connect();
 };
 

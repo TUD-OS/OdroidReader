@@ -21,11 +21,11 @@ public:
 	virtual QString descriptor() = 0;
 
 public slots:
-	virtual void connect() = 0;
+    virtual void connect() = 0;
 
 signals:
 	void dataReceived(QString source);
-	void descriptorsAvailable(const QVector<DataDescriptor>& descriptors);
+    void descriptorsAvailable(const QVector<const DataDescriptor*>& descriptors);
 	void dataAvailable(); //TODO
 	void connected();
 };

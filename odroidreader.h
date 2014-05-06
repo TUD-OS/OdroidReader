@@ -15,6 +15,7 @@
 #include <QListWidgetItem>
 #include <ui/dataexplorer.h>
 #include <Data/datasource.h>
+#include <Data/datadescriptor.h>
 
 typedef enum class {
 	DESC = 0,
@@ -70,6 +71,8 @@ private slots:
 
   void on_startSampling_clicked();
 
+  void addDescriptors(const QVector<const DataDescriptor *> &descriptors);
+
 private:
   void enableControls(bool status);
   void updateSensors();
@@ -96,6 +99,7 @@ private:
   QVector<Experiment> experiments;
   Experiment* currentExp;
   Experiment::Environment* currentEnv;
+  QVector<const DataDescriptor*> descriptors;
   QVector<DataSource*> sources;
 };
 
