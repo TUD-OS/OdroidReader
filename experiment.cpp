@@ -51,7 +51,7 @@ void Experiment::write(QJsonObject& jo) const {
 	jo["tail_time"] = static_cast<qint64>(tail_time);
 }
 
-QString Experiment::prepareMeasurement(float) {
+QString Experiment::prepareMeasurement() {
 	return prepare;
 }
 
@@ -67,7 +67,7 @@ QString Experiment::cleanupMeasurement(float time) {
 	return cleanup;
 }
 
-bool Experiment::hasData() { return wasRun; }
+bool Experiment::hasData() const { return wasRun; }
 
 QString Experiment::Environment::description() const {
 	QString desc("%1 MHz[%2-%3 MHz]@%4 -> %5");
@@ -82,42 +82,44 @@ QString Experiment::Environment::description() const {
 
 void Experiment::finishedCleanup(float) {}
 
-SimpleValue<double> Experiment::Environment::integral(int unit, const Experiment &e) const {
-	SimpleValue<double> allRuns;
-	for (int i = 0; i < runs.size(); i++) {
-		double value = -1;
-		QPair<double,double> last;
-		for (const QPair<double,double> &p : run(unit,i,e).values()) {
-			if (value == -1) {
-				last = p;
-				value = 0;
-				continue;
-			}
-			double t = p.first-last.first;
-			value += t*last.second+t*(p.second-last.second)/2;
-			last = p;
-		}
-		allRuns.add(value,0);
-	}
-	return allRuns;
+double Experiment::Environment::integral(int unit, const Experiment &e) const {
+//	DataSeries allRuns(e.data.at(unit)->descriptor);
+//	for (int i = 0; i < runs.size(); i++) {
+//		double value = -1;
+//		QPair<double,double> last;
+//		DataSeries s = run(unit,i,e);
+//		for (int i = 0; i < s.getTimestamps().size(); i++) {
+//			double ts =  s.getTimestamps().at(i);
+//			double val = s.getValues().at(i);
+//			if (value == -1) {
+//				value = 0;
+//			} else {
+//				double t = ts-last.first;
+//				value += t*last.second+t*(val-last.second)/2;
+//			}
+//			last = QPair<double,double>(ts,val);
+//		}
+//		allRuns.addValue(value,0);
+//	}
+	return 0; //allRuns;
 }
 
-SimpleValue<double> Experiment::Environment::aggregate(int unit, const Experiment &e) const {
-	SimpleValue<double> allRuns;
+StatisticalSet Experiment::Environment::aggregate(int unit, const Experiment &e) const {
+	StatisticalSet s(e.data.at(unit)->descriptor);
 	for (int i = 0; i < runs.size(); i++) {
-		allRuns.extend(run(unit,i,e));
+		s.addValue(run(unit,i,e).getAvg());
 	}
-	return allRuns;
+	return s;
 }
 
-SimpleValue<double> Experiment::aggregate(int unit, const Experiment &e) const {
-	SimpleValue<double> allEnvironments;
+StatisticalSet Experiment::aggregate(int unit, const Experiment &e) const {
+	StatisticalSet s(e.data.at(unit)->descriptor);
 	for (const Environment &env : environments) {
-		allEnvironments.extend(env.aggregate(unit,e));
+		s.extend(env.aggregate(unit,e));
 	}
-	return allEnvironments;
+	return s;
 }
 
-SimpleValue<double> Experiment::Environment::run(int unit, int run, const Experiment &e, bool normalize) const {
-	return SimpleValue<double>(); //e.data->at(unit)->value(),runs.at(run).first,runs.at(run).second,normalize);
+DataSeries Experiment::Environment::run(int unit, int run, const Experiment &e) const {
+	return DataSeries(e.data.at(unit)->descriptor,runs.at(run).first,runs.at(run).second);
 }

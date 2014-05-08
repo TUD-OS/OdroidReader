@@ -1,7 +1,6 @@
 #include "environmentdelegate.h"
 #include <QComboBox>
 #include <QPushButton>
-#include <QDebug>
 
 EnvironmentDelegate::EnvironmentDelegate(QObject *parent) :
     QStyledItemDelegate(parent)

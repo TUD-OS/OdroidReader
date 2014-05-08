@@ -12,16 +12,20 @@ class DataSeries : public QObject
 public:
 	const DataDescriptor *descriptor;
 private:
-//	QVector<QPair<double,double>> _values;
 	QVector<double> timestamps;
 	QVector<double> values;
 	double _min, _max, _avg;
 
 public:
 	DataSeries(const DataDescriptor* desc, QObject *parent = nullptr);
+	DataSeries(const DataSeries& src, double from, double to);
+	DataSeries(const DataSeries&);
 	void addValue(double time, double value);
 	const QVector<double>& getTimestamps() { return timestamps; }
 	const QVector<double>& getValues() { return values; }
+	double getAvg() const { return _avg; }
+	double getMin() const { return _min; }
+	double getMax() const { return _max; }
 signals:
 	void newMax(double max);
 	void newMin(double min);

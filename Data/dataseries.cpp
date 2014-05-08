@@ -10,6 +10,26 @@ DataSeries::DataSeries(const DataDescriptor *desc, QObject *parent)
 	  _avg(0)
 {}
 
+DataSeries::DataSeries(const DataSeries &src) : QObject(src.parent()), descriptor(src.descriptor) {
+	timestamps = src.timestamps;
+	values = src.values;
+	_min = src._min;
+	_max = src._max;
+	_avg = src._avg;
+}
+
+DataSeries::DataSeries(const DataSeries &src, double from, double to) {
+	int ctr = 0;
+	for (int i = 0; i < src.timestamps.size(); i++) {
+		double time = src.timestamps.at(i);
+		if (time >= from && time <= to) {
+			addValue(time,src.values.at(i));
+			ctr++;
+		}
+	}
+	qDebug() << "Copied " << ctr << "values";
+}
+
 //TODO: requires values to be added in time order
 void DataSeries::addValue(double time, double value) {
 	assert(timestamps.size() == 0 || time >= timestamps.last()); //If this is not true we have to recalculate avg :(

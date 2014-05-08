@@ -4,6 +4,7 @@
 #include <QString>
 #include <QObject>
 #include <QVector>
+#include <experiment.h>
 #include <Data/datadescriptor.h>
 
 Q_DECLARE_METATYPE(QVector<const DataDescriptor*>)
@@ -20,14 +21,17 @@ public:
 	DataSource& operator=(const DataSource&) = delete;
 	inline const QString& name() const { return _name; }
 	virtual QString descriptor() = 0;
-	virtual bool canExecute() = 0;
+	virtual bool canExecute() const = 0;
 	virtual void execute(QString exec);
+	virtual void setupEnvironment(const Experiment::Environment& env);
 
 public slots:
 	virtual void start() = 0;
 
 signals:
 	void dataReceived(QString source);
+	void commandStarted(DataSource& ds, double time);
+	void commandFinished(DataSource& ds, double time);
 	void descriptorsAvailable(QVector<const DataDescriptor*> descriptors);
 	void dataAvailable(const DataDescriptor* desc,double data, double time); //TODO
 	void connected();

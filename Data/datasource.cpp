@@ -6,3 +6,7 @@ DataSource::DataSource(QString name, QObject* parent) :
 void DataSource::execute(QString) {
 	return;
 }
+
+void DataSource::setupEnvironment(const Experiment::Environment &) {
+	return;
+}

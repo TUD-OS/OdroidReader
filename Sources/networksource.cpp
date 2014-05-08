@@ -10,14 +10,15 @@ T networkDecode(QByteArray const &ba) {
 }
 
 NetworkSource::NetworkSource(QString name, QString address, quint16 port, int interval, QObject *parent) :
-	DataSource(name,parent), _address(address), _port(port)
+	DataSource(name,parent), _address(address), _port(port), started(false)
 {
-	networkThread = new QThread();
 	getTimer.setInterval(interval);
 	connect(&getTimer,&QTimer::timeout, [&]() { socket.write("GET\n"); });
-	socket.moveToThread(networkThread);
-	this->moveToThread(networkThread); //TODO: this should not work if we have a parent. Enforce?
-	networkThread->start();
+	connect(&socket,&QTcpSocket::connected, [this]() {
+		query = Query::DESC;
+		emit connected();
+		socket.write("DESC\n");
+	});
 }
 
 NetworkSource::~NetworkSource() {
@@ -42,12 +43,6 @@ void NetworkSource::conerror(QAbstractSocket::SocketError err) {
 	socket.close();
 }
 
-void NetworkSource::connected() {
-	qDebug() << "Connected to " << descriptor();
-	query = Query::DESC;
-	socket.write("DESC\n");
-}
-
 void NetworkSource::readData() {
 	quint32 val;
 	switch (query) {
@@ -63,8 +58,20 @@ void NetworkSource::readData() {
 				switch (d->type()) {
 				  case DataDescriptor::Type::BIGLITTLE:
 				  case DataDescriptor::Type::CHAR:
-					emit dataAvailable(d,*reinterpret_cast<const uchar*>(socket.read(1).constData()),lastTime);
-					break;
+					{
+						unsigned char data = *reinterpret_cast<const uchar*>(socket.read(1).constData());
+						if (d->name() == "running") {
+							if (started == false && data == 1) {
+								started = true;
+								emit commandStarted(*this,lastTime);
+							} else if (started == true && data == 0) {
+								started = false;
+								emit commandFinished(*this,lastTime);
+							}
+						}
+						emit dataAvailable(d,data,lastTime);
+						break;
+					}
 				  case DataDescriptor::Type::FLOAT:
 					val = networkDecode<quint32>(socket.read(4));
 					emit dataAvailable(d,*reinterpret_cast<float*>(&val),lastTime);
@@ -78,26 +85,8 @@ void NetworkSource::readData() {
 				  default:
 					qDebug() << "Error interpreting data " << i;
 				}
-//				//TODO
-//				if (d->type() != FIELD_TYPE::BIGLITTLE)
-//					ts << d->value().last() << ";";
 			}
-//			ui->globalPlot->rescaleAxes(true);
-//			ui->globalPlot->yAxis->scaleRange(1.2,ui->globalPlot->yAxis->range().center());
-//			ui->globalPlot->replot();
-//			if (es != ExperimentState::Idle && descs.at(1)->value().last() == 0 && executed) {
-//				executed = false;
-//				qDebug() << "Stepping" << descs.at(1)->value().last() << descs.at(1)->value().changed();
-//				if (es == ExperimentState::Execute)
-//					QTimer::singleShot(toRun.back()->cooldown_time*1000,this,SLOT(runExperiments()));
-//				else
-//					runExperiments();
-//			}
-//			ts << "\n";
-//			ts.flush(); //TODO: Check if this is really a good idea (esp. for high frequency reading)
-//			query = Query::NONE;
-//			assert(socket.bytesAvailable() == 0 || "Extra Data");
-			break; //WOOT!
+			break;
 		case Query::DESC:
 		  uint16_t got;
 		  do {
@@ -119,9 +108,7 @@ void NetworkSource::readData() {
 				qRegisterMetaType<QVector<const DataDescriptor*>>("QVector<const DataDescriptor*>");
 				emit descriptorsAvailable(descs);
 				query = Query::GET;
-//				socket.write("GET\n");
 				getTimer.start();
-				qDebug() << "Emitted!";
 				return;
 			}
 
@@ -150,14 +137,27 @@ void NetworkSource::readData() {
 }
 
 void NetworkSource::execute(QString exec) {
-	qDebug() << "Executing" << exec;
+	if (exec.length() == 0) {
+		emit commandFinished(*this,lastTime);
+		return;
+	}
+	assert(started == false); //TODO! This implies single instances
 	socket.write("EXEC\n");
 	socket.write(exec.append("\n").toStdString().c_str());
 }
 
+void NetworkSource::setupEnvironment(const Experiment::Environment &env) {
+	socket.write("SETUP\n");
+	socket.write(QString("%1\n").arg(env.governor).toStdString().c_str());
+	qDebug() << "Governor is:" << env.governor << env.freq << env.freq_min << "-" << env.freq_max;
+	if (env.governor == "userspace")
+		socket.write(std::to_string(env.freq).append("000\n").c_str());
+	socket.write(std::to_string(env.freq_min).append("000\n").c_str());
+	socket.write(std::to_string(env.freq_max).append("000\n").c_str());
+}
+
 void NetworkSource::start() {
 	qDebug() << "Connecting to " << descriptor();
-	socket.connect(&socket,SIGNAL(connected()),this,SLOT(connected()));
 	socket.connect(&socket,SIGNAL(error(QAbstractSocket::SocketError)),this,SLOT(conerror(QAbstractSocket::SocketError)));
 	socket.connect(&socket,SIGNAL(readyRead()),this,SLOT(readData()));
 	socket.connectToHost(_address,_port);

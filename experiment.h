@@ -5,6 +5,7 @@
 #include <vector>
 #include <QJsonObject>
 #include "Data/dataseries.h"
+#include "Data/statisticalset.h"
 #include <Data/o_datapoint.h>
 
 class Experiment
@@ -24,9 +25,9 @@ public:
 			bool big, little;
 			QVector<QPair<double,double>> runs; //All datapoints for all repetitions
 			QString description() const;
-			SimpleValue<double> aggregate(int unit, const Experiment& e) const;
-			SimpleValue<double> integral(int unit, const Experiment& e) const;
-			SimpleValue<double> run(int unit, int run, const Experiment &e, bool normalize = false) const;
+			StatisticalSet aggregate(int unit, const Experiment& e) const;
+			double  integral(int unit, const Experiment& e) const;
+			DataSeries run(int unit, int run, const Experiment &e) const;
 	};
 
 	QString title, prepare, cleanup, command;
@@ -35,10 +36,10 @@ public:
 	Experiment(QJsonObject &jo, const QVector<DataSeries*>& data);
 	Experiment() = delete;
 	void write(QJsonObject &jo) const;
-	SimpleValue<double> aggregate(int unit, const Experiment& e) const;
-	bool hasData();
+	StatisticalSet aggregate(int unit, const Experiment& e) const;
+	bool hasData() const;
 	QVector<Environment> environments;
-	QString prepareMeasurement(float time);
+	QString prepareMeasurement();
 	QString cleanupMeasurement(float time);
 	QString startMeasurement(double time, int run);
 	void finishedCleanup(float time);
