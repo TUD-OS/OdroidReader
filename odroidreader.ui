@@ -175,7 +175,9 @@
                <string>Add</string>
               </property>
               <property name="icon">
-               <iconset theme="list-add"/>
+               <iconset theme="list-add">
+                <normaloff/>
+               </iconset>
               </property>
              </widget>
             </item>
@@ -201,7 +203,9 @@
              <string>Remove</string>
             </property>
             <property name="icon">
-             <iconset theme="list-remove"/>
+             <iconset theme="list-remove">
+              <normaloff/>
+             </iconset>
             </property>
            </widget>
           </item>
@@ -211,7 +215,9 @@
              <string>Start</string>
             </property>
             <property name="icon">
-             <iconset theme="media-record"/>
+             <iconset theme="media-record">
+              <normaloff/>
+             </iconset>
             </property>
            </widget>
           </item>
@@ -236,7 +242,9 @@
            <string>Load Experiments</string>
           </property>
           <property name="icon">
-           <iconset theme="document-open"/>
+           <iconset theme="document-open">
+            <normaloff/>
+           </iconset>
           </property>
          </widget>
         </item>
@@ -253,7 +261,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="overview">
        <attribute name="title">
@@ -281,7 +289,7 @@
            <enum>QAbstractItemView::SelectRows</enum>
           </property>
           <property name="columnCount">
-           <number>6</number>
+           <number>7</number>
           </property>
           <column>
            <property name="text">
@@ -306,6 +314,11 @@
           <column>
            <property name="text">
             <string>Max</string>
+           </property>
+          </column>
+          <column>
+           <property name="text">
+            <string>Average</string>
            </property>
           </column>
           <column>
@@ -601,7 +614,9 @@
                <string/>
               </property>
               <property name="icon">
-               <iconset theme="list-add"/>
+               <iconset theme="list-add">
+                <normaloff/>
+               </iconset>
               </property>
              </widget>
             </item>

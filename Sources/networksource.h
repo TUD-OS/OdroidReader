@@ -25,7 +25,7 @@ private:
 	size_t packetSize;
 	double lastTime;
 public:
-	NetworkSource(QString name, QString address, quint16 port, QObject *parent = nullptr);
+	NetworkSource(QString name, QString address, quint16 port, int interval, QObject *parent = nullptr);
 	virtual ~NetworkSource();
 	inline virtual bool canExecute() { return true; }
 	virtual void execute(QString exec);
@@ -34,7 +34,7 @@ public:
     inline virtual QString descriptor() { return QString("[Net] %1 @ %2:%3").arg(_name,_address,QString::number(_port)); }
 signals:
 	void descriptorsAvailable(QVector<const DataDescriptor*> descriptors);
-	void dataAvailable(const DataDescriptor* desc,double data, double time); //TODO
+	void dataAvailable(const DataDescriptor* desc, double data, double time); //TODO
 
 public slots:
 	void conerror(QAbstractSocket::SocketError error);

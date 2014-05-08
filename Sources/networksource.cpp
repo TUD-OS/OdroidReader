@@ -9,10 +9,12 @@ T networkDecode(QByteArray const &ba) {
 	return qFromBigEndian<T>(reinterpret_cast<const uchar*>(ba.constData()));
 }
 
-NetworkSource::NetworkSource(QString name, QString address, quint16 port, QObject *parent) :
+NetworkSource::NetworkSource(QString name, QString address, quint16 port, int interval, QObject *parent) :
 	DataSource(name,parent), _address(address), _port(port)
 {
 	networkThread = new QThread();
+	getTimer.setInterval(interval);
+	connect(&getTimer,&QTimer::timeout, [&]() { socket.write("GET\n"); });
 	socket.moveToThread(networkThread);
 	this->moveToThread(networkThread); //TODO: this should not work if we have a parent. Enforce?
 	networkThread->start();
@@ -95,7 +97,7 @@ void NetworkSource::readData() {
 //			ts.flush(); //TODO: Check if this is really a good idea (esp. for high frequency reading)
 //			query = Query::NONE;
 //			assert(socket.bytesAvailable() == 0 || "Extra Data");
-//			break;
+			break; //WOOT!
 		case Query::DESC:
 		  uint16_t got;
 		  do {
@@ -117,7 +119,8 @@ void NetworkSource::readData() {
 				qRegisterMetaType<QVector<const DataDescriptor*>>("QVector<const DataDescriptor*>");
 				emit descriptorsAvailable(descs);
 				query = Query::GET;
-				socket.write("GET\n");
+//				socket.write("GET\n");
+				getTimer.start();
 				qDebug() << "Emitted!";
 				return;
 			}

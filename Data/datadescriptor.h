@@ -1,14 +1,13 @@
 #ifndef DATADESCRIPTOR_H
 #define DATADESCRIPTOR_H
-
 #include <QString>
 
 class DataDescriptor
 {
 public:
-	typedef enum class {
-		CHAR = 0, FLOAT = 1, UINT16T = 2, BIGLITTLE = 3, UINT32T =4
-	} Type;
+	enum class Type {
+		CHAR, FLOAT, UINT16T, BIGLITTLE, UINT32T
+	};
 
 private:
 	QString _name, _unit;

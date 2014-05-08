@@ -4,7 +4,8 @@
 #include <string>
 #include <vector>
 #include <QJsonObject>
-#include "Data/o_datapoint.h"
+#include "Data/dataseries.h"
+#include <Data/o_datapoint.h>
 
 class Experiment
 {
@@ -13,7 +14,7 @@ private:
 	int currentRun;
 	bool wasRun;
 public:
-	const QVector<Datapoint<double>*> *data;
+	const QVector<DataSeries*> &data;
 
 public:
 	class Environment {
@@ -31,9 +32,9 @@ public:
 	QString title, prepare, cleanup, command;
 	uint32_t tail_time, cooldown_time;
 
+	Experiment(QJsonObject &jo, const QVector<DataSeries*>& data);
+	Experiment() = delete;
 	void write(QJsonObject &jo) const;
-	Experiment(QJsonObject &jo, QVector<Datapoint<double> *> *data);
-	Experiment();
 	SimpleValue<double> aggregate(int unit, const Experiment& e) const;
 	bool hasData();
 	QVector<Environment> environments;

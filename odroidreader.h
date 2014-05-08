@@ -43,7 +43,7 @@ class OdroidReader : public QMainWindow
 
 public:
   explicit OdroidReader(QWidget *parent = 0);
-  static QVector<Datapoint<double>*> descs;
+  //static QVector<Datapoint<double>*> descs;
   ~OdroidReader();
 
 private slots:
@@ -69,8 +69,6 @@ private slots:
   void on_pushButton_clicked();
 
   void on_addConnection_clicked();
-
-  void on_startSampling_clicked();
 
   void addDescriptors(QVector<const DataDescriptor *> descriptors);
   void addData(const DataDescriptor* desc, double data, double time);
@@ -98,12 +96,12 @@ private:
   QTextStream ts;
   //quint32 packetSize;
   QVector<QPointF> samples;
-  QVector<Experiment> experiments;
   Experiment* currentExp;
   Experiment::Environment* currentEnv;
   QVector<DataSeries*> data;
-  QVector<const DataDescriptor*> descriptors;
   QVector<DataSource*> sources;
+  QVector<Experiment*> experiments;
+  QVector<QCPGraph*> graphs;
 };
 
 #endif // ODROIDREADER_H

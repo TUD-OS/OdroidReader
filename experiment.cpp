@@ -2,11 +2,11 @@
 #include "odroidreader.h"
 #include <QJsonArray>
 
-Experiment::Experiment()
-{}
+//Experiment::Experiment()
+//{}
 
-Experiment::Experiment(QJsonObject& jo, QVector<Datapoint<double>*> *data)
-	: wasRun(false), data(data)
+Experiment::Experiment(QJsonObject& jo, const QVector<DataSeries *> &descs)
+	: wasRun(false), data(descs)
 {
 	title = jo["title"].toString();
 	prepare = jo["prepare"].toString();
@@ -119,5 +119,5 @@ SimpleValue<double> Experiment::aggregate(int unit, const Experiment &e) const {
 }
 
 SimpleValue<double> Experiment::Environment::run(int unit, int run, const Experiment &e, bool normalize) const {
-	return SimpleValue<double>(e.data->at(unit)->value(),runs.at(run).first,runs.at(run).second,normalize);
+	return SimpleValue<double>(); //e.data->at(unit)->value(),runs.at(run).first,runs.at(run).second,normalize);
 }

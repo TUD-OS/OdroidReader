@@ -49,10 +49,10 @@ void DataExplorer::updateDetails() {
 			int envid = p->property("EID").toInt();
 			SimpleValue<double> vals = exp->environments.at(envid).integral(unitid,*exp);
 			QCPStatisticalBox* b = new QCPStatisticalBox(ui->runPlot->xAxis,ui->runPlot->yAxis);
-			b->setData(colid,vals.min(),vals.quantile(0.25),vals.median(),vals.quantile(0.75),vals.max());
+//			b->setData(colid,vals.min(),vals.quantile(0.25),vals.median(),vals.quantile(0.75),vals.max());
 			ui->runPlot->addPlottable(b);
-			labels.append(QString("%1 @ %2").arg(exp->data->at(unitid)->name(),exp->environments.at(envid).label));
-			ticks.append(colid++);
+//			labels.append(QString("%1 @ %2").arg(exp->data->at(unitid)->name(),exp->environments.at(envid).label))
+//			ticks.append(colid++);
 			ui->runPlot->xAxis->setAutoTicks(false);
 			ui->runPlot->xAxis->setAutoTickLabels(false);
 			ui->runPlot->xAxis->setSubTickCount(0);
@@ -81,12 +81,12 @@ void DataExplorer::updateEnvironment() {
 		for (const Experiment::Environment& e : exp->environments) {
 			SimpleValue<double> vals = e.aggregate(unit,*exp);
 			QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectEnvironment->xAxis,ui->selectEnvironment->yAxis);
-			b->setData(idx,vals.min(),vals.quantile(0.25),vals.median(),vals.quantile(0.75),vals.max());
+		//	b->setData(idx,vals.min(),vals.quantile(0.25),vals.median(),vals.quantile(0.75),vals.max());
             b->setProperty("UID",unit);
             b->setProperty("EID",eid++);
 			ui->selectEnvironment->addPlottable(b);
-			labels.append(QString("%1 @ %2").arg(exp->data->at(unit)->name(),e.label));
-			ticks.append(idx++);
+//			labels.append(QString("%1 @ %2").arg(exp->data->at(unit)->name(),e.label));
+	//		ticks.append(idx++);
 		}
 	}
 	ui->selectEnvironment->xAxis->setAutoTicks(false);
@@ -136,18 +136,18 @@ void DataExplorer::on_dispUnit_currentIndexChanged(int)
 
 	QVector<QString> labels;
 	int i = -1;
-	for (Datapoint<double>* p : *exp->data) {
-		++i;
-		if (p->unit() != ui->dispUnit->currentText()) continue;
-		SimpleValue<double> v = exp->aggregate(i,*exp);
-		QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectMetric->xAxis,ui->selectMetric->yAxis);
-		b->setBrush(boxBrush);
-		b->setProperty("UID",i);
-		b->setData(i,v.min(),v.quantile(0.25),v.median(),v.quantile(0.75),v.max());
-		ui->selectMetric->addPlottable(b);
-		ticks.append(i);
-		labels.append(p->name());
-	}
+//	for (Datapoint<double>* p : *exp->data) {
+//		++i;
+//		if (p->unit() != ui->dispUnit->currentText()) continue;
+//		SimpleValue<double> v = exp->aggregate(i,*exp);
+//		QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectMetric->xAxis,ui->selectMetric->yAxis);
+//		b->setBrush(boxBrush);
+//		b->setProperty("UID",i);
+//		b->setData(i,v.min(),v.quantile(0.25),v.median(),v.quantile(0.75),v.max());
+//		ui->selectMetric->addPlottable(b);
+//		ticks.append(i);
+//		labels.append(p->name());
+//	}
 	ui->selectMetric->xAxis->setSubTickCount(0);
 	ui->selectMetric->xAxis->setTickLength(0, 4);
 	ui->selectMetric->xAxis->setTickLabelRotation(40);
@@ -170,10 +170,10 @@ void DataExplorer::setExperiment(const Experiment *exp) {
 	if (exp != nullptr) {
 		on_runNo_valueChanged(0);
 
-		for (DatapointBase const *p : *exp->data) {
-			if (ui->dispUnit->findText(p->unit()) == -1)
-				ui->dispUnit->addItem(p->unit());
-		}
+//		for (DatapointBase const *p : *exp->data) {
+//			if (ui->dispUnit->findText(p->unit()) == -1)
+//				ui->dispUnit->addItem(p->unit());
+//		}
 	}
 }
 
