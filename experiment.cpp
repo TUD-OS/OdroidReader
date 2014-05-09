@@ -82,30 +82,31 @@ QString Experiment::Environment::description() const {
 
 void Experiment::finishedCleanup(float) {}
 
-double Experiment::Environment::integral(int unit, const Experiment &e) const {
-//	DataSeries allRuns(e.data.at(unit)->descriptor);
-//	for (int i = 0; i < runs.size(); i++) {
-//		double value = -1;
-//		QPair<double,double> last;
-//		DataSeries s = run(unit,i,e);
-//		for (int i = 0; i < s.getTimestamps().size(); i++) {
-//			double ts =  s.getTimestamps().at(i);
-//			double val = s.getValues().at(i);
-//			if (value == -1) {
-//				value = 0;
-//			} else {
-//				double t = ts-last.first;
-//				value += t*last.second+t*(val-last.second)/2;
-//			}
-//			last = QPair<double,double>(ts,val);
-//		}
-//		allRuns.addValue(value,0);
-//	}
-	return 0; //allRuns;
+StatisticalSet Experiment::Environment::integral(int unit, const Experiment &e) const {
+	StatisticalSet allRuns(e.data.at(unit)->descriptor);
+	for (int i = 0; i < runs.size(); i++) {
+		double value = -1;
+		QPair<double,double> last;
+		DataSeries s = run(unit,i,e);
+		for (int i = 0; i < s.getTimestamps().size(); i++) {
+			double ts =  s.getTimestamps().at(i);
+			double val = s.getValues().at(i);
+			if (value == -1) {
+				value = 0;
+			} else {
+				double t = ts-last.first;
+				value += t*last.second+t*(val-last.second)/2;
+			}
+			last = QPair<double,double>(ts,val);
+		}
+		allRuns.addValue(value);
+	}
+	return allRuns;
 }
 
 StatisticalSet Experiment::Environment::aggregate(int unit, const Experiment &e) const {
 	StatisticalSet s(e.data.at(unit)->descriptor);
+	qDebug() << "Aggregating environment over" << runs.size() << "runs";
 	for (int i = 0; i < runs.size(); i++) {
 		s.addValue(run(unit,i,e).getAvg());
 	}
@@ -113,13 +114,16 @@ StatisticalSet Experiment::Environment::aggregate(int unit, const Experiment &e)
 }
 
 StatisticalSet Experiment::aggregate(int unit, const Experiment &e) const {
+	qDebug() << "Aggregating Experiment " << e.title << "Unit: " << unit;
 	StatisticalSet s(e.data.at(unit)->descriptor);
 	for (const Environment &env : environments) {
+		qDebug() << "Extending Set" << env.description();
 		s.extend(env.aggregate(unit,e));
 	}
 	return s;
 }
 
 DataSeries Experiment::Environment::run(int unit, int run, const Experiment &e) const {
-	return DataSeries(e.data.at(unit)->descriptor,runs.at(run).first,runs.at(run).second);
+	qDebug() << "Extracting Dataseries ...";
+	return DataSeries(*e.data.at(unit),runs.at(run).first,runs.at(run).second);
 }

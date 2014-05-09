@@ -17,10 +17,10 @@ private:
 	double _min, _max, _avg;
 
 public:
-	DataSeries(const DataDescriptor* desc, QObject *parent = nullptr);
-	DataSeries(const DataSeries& src, double from, double to);
+	explicit DataSeries(const DataDescriptor* desc, QObject *parent = nullptr);
+	DataSeries(const DataSeries& src, double from, double to, bool timeAdjust = true);
 	DataSeries(const DataSeries&);
-	void addValue(double time, double value);
+	void addValue(double time, double value, bool scale = true);
 	const QVector<double>& getTimestamps() { return timestamps; }
 	const QVector<double>& getValues() { return values; }
 	double getAvg() const { return _avg; }

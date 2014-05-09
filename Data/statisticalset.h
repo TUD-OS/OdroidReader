@@ -15,9 +15,9 @@ public:
 	void addValue(double val);
 	void extend(const StatisticalSet& s);
 	double quantile(double q) const;
-	double min() const { return _sorted.first(); }
-	double max() const { return _sorted.last(); }
-	double median() const { return (_sorted.size() > 0)?_sorted[_sorted.size()/2]:0; }
+	double min() const { return quantile(0); }
+	double max() const { return quantile(1); }
+	double median() const { return quantile(0.5); } //return (_sorted.size() > 0)?_sorted[_sorted.size()/2]:0; }
 };
 
 #endif // STATISTICALSET_H

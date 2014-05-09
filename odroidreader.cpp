@@ -14,6 +14,7 @@
 #include "environmentmodel.h"
 #include "environmentdelegate.h"
 #include <QJsonArray>
+#include <ui/tabstyle.h>
 #include <Sources/networksource.h>
 
 Q_DECLARE_METATYPE(const Experiment*)
@@ -29,11 +30,18 @@ OdroidReader::OdroidReader(QWidget *parent) :
 	ui->setupUi(this);
 	ui->runSelected->setMenu(new QMenu("On Client"));
 	ui->ip->setValidator(new IPValidator());
+	ui->sourceType->tabBar()->setStyle(new TabStyle(Qt::Horizontal));
 	ui->sensors->setColumnWidth(0,30);
 	ui->globalPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
 
 	connect(ui->runSelected->menu(),&QMenu::triggered,this,&OdroidReader::runSelectedOnSource);
 	connect(ui->environment,SIGNAL(clicked(QModelIndex)),this,SLOT(removeEnvironment(QModelIndex)));
+	connect(ui->startSampling,&QPushButton::clicked,[this] () {
+		static bool start = false;
+		start = !start;
+		ui->startSampling->setText((start)?"Stop":"Start");
+		ui->startSampling->setIcon(QIcon::fromTheme((start)?"media-playback-stop":"media-record"));
+	});
 	connect(qApp,SIGNAL(aboutToQuit()),this,SLOT(aboutToQuit()));
 
 	//Load state ...
@@ -298,7 +306,14 @@ void OdroidReader::on_addConnection_clicked()
 	connect(ns,SIGNAL(descriptorsAvailable(QVector<const DataDescriptor*>)),this,SLOT(addDescriptors(QVector<const DataDescriptor*>)));
 	connect(ns,SIGNAL(dataAvailable(const DataDescriptor*,double,double)),this,SLOT(addData(const DataDescriptor*,double,double)));
 	sources.append(ns);
-	ui->sourceList->addItem(ns->descriptor());
+	QListWidgetItem* lwi = new QListWidgetItem(QIcon::fromTheme("network-disconnect"),ns->descriptor());
+	ui->sourceList->addItem(lwi);
+	connect(ns,&NetworkSource::connected, [lwi,this]() {
+		lwi->setIcon(QIcon::fromTheme("network-connect"));
+	});
+	connect(ns,&NetworkSource::disconnected, [lwi,this]() {
+		lwi->setIcon(QIcon::fromTheme("network-disconnect"));
+	});
 	ui->runSelected->menu()->clear();
 	for (DataSource* ds : sources) {
 		if (ds->canExecute()) {

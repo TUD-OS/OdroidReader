@@ -24,7 +24,8 @@ SOURCES += main.cpp\
     Sources/networksource.cpp \
     Data/o_datapoint.cpp \
     Data/dataseries.cpp \
-    Data/statisticalset.cpp
+    Data/statisticalset.cpp \
+    ui/tabstyle.cpp
 
 HEADERS  += odroidreader.h \
     ipvalidator.h \
@@ -40,7 +41,8 @@ HEADERS  += odroidreader.h \
     Sources/networksource.h \
     Data/o_datapoint.h \
     Data/dataseries.h \
-    Data/statisticalset.h
+    Data/statisticalset.h \
+    ui/tabstyle.h
 
 FORMS    += odroidreader.ui \
     ui/dataexplorer.ui

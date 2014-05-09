@@ -10,7 +10,7 @@ T networkDecode(QByteArray const &ba) {
 }
 
 NetworkSource::NetworkSource(QString name, QString address, quint16 port, int interval, QObject *parent) :
-	DataSource(name,parent), _address(address), _port(port), started(false)
+	DataSource(name,parent), _address(address), _port(port), started(false), _running(false), reconnect(false)
 {
 	getTimer.setInterval(interval);
 	connect(&getTimer,&QTimer::timeout, [&]() { socket.write("GET\n"); });
@@ -18,6 +18,7 @@ NetworkSource::NetworkSource(QString name, QString address, quint16 port, int in
 		query = Query::DESC;
 		emit connected();
 		socket.write("DESC\n");
+		recon_ctr = 0;
 	});
 }
 
@@ -92,6 +93,7 @@ void NetworkSource::readData() {
 		  do {
 			got = static_cast<quint8>(socket.peek(1).at(0));
 			if (got == 0) { //End of descriptors
+				qint64 oldPS = packetSize;
 				assert(socket.bytesAvailable() == 1);
 				socket.read(1);
 				packetSize = 0;
@@ -105,13 +107,17 @@ void NetworkSource::readData() {
 					}
 				}
 				qDebug() << "Done reading" << descs.size() << "Descriptors" << "(Data Size:" << packetSize << ")";
-				qRegisterMetaType<QVector<const DataDescriptor*>>("QVector<const DataDescriptor*>");
-				emit descriptorsAvailable(descs);
+				assert(!reconnect || oldPS == packetSize);
+				if (reconnect) {
+					qDebug() << "Looks like we reconected successfully";
+				} else {
+					qRegisterMetaType<QVector<const DataDescriptor*>>("QVector<const DataDescriptor*>");
+					emit descriptorsAvailable(descs);
+				}
 				query = Query::GET;
 				getTimer.start();
 				return;
 			}
-
 			while (socket.bytesAvailable() >= 9+got) {
 				QByteArray ba = socket.read(9+got);
 				quint8 name_len = static_cast<quint8>(ba.left(1).constData()[0]);
@@ -123,7 +129,16 @@ void NetworkSource::readData() {
 				QString _name = ba.left(name_len).constData();
 				ba.remove(0,name_len);
 				QString _unit = ba.constData();
-				descs.push_back(new DataDescriptor(_name,_unit,_factor,_type));
+				if (reconnect) {
+					assert(descs.at(recon_ctr)->name() == _name &&
+					descs.at(recon_ctr)->name() == _name &&
+					descs.at(recon_ctr)->unit() == _unit &&
+					descs.at(recon_ctr)->factor() == _factor &&
+					descs.at(recon_ctr)->type() == _type);
+					recon_ctr++;
+				} else {
+					descs.push_back(new DataDescriptor(_name,_unit,_factor,_type));
+				}
 				if (socket.bytesAvailable() < 1)
 					break;
 				got = static_cast<quint8>(socket.peek(1).at(0));
@@ -157,8 +172,17 @@ void NetworkSource::setupEnvironment(const Experiment::Environment &env) {
 }
 
 void NetworkSource::start() {
-	qDebug() << "Connecting to " << descriptor();
-	socket.connect(&socket,SIGNAL(error(QAbstractSocket::SocketError)),this,SLOT(conerror(QAbstractSocket::SocketError)));
-	socket.connect(&socket,SIGNAL(readyRead()),this,SLOT(readData()));
-	socket.connectToHost(_address,_port);
+	_running = !_running;
+	if (_running) {
+		qDebug() << "Connecting to" << descriptor();
+		connect(&socket,SIGNAL(error(QAbstractSocket::SocketError)),this,SLOT(conerror(QAbstractSocket::SocketError)));
+		connect(&socket,SIGNAL(readyRead()),this,SLOT(readData()));
+		connect(&socket,&QTcpSocket::disconnected,[this]() { emit disconnected(); });
+		socket.connectToHost(_address,_port);
+	} else {
+		qDebug() << "Disconnecting from"  << descriptor();
+		reconnect = true;
+		getTimer.stop();
+		socket.disconnectFromHost();
+	}
 }

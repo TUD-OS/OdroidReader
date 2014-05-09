@@ -12,6 +12,9 @@ DataExplorer::DataExplorer(QWidget *parent) :
 	ui(new Ui::DataExplorer)
 {
 	ui->setupUi(this);
+	ui->selectMetric->setSelectionTolerance(5);
+	ui->selectEnvironment->setSelectionTolerance(5);
+	ui->runPlot->setSelectionTolerance(5);
 }
 
 DataExplorer::~DataExplorer()
@@ -20,6 +23,7 @@ DataExplorer::~DataExplorer()
 }
 
 void DataExplorer::updateDetails() {
+	qDebug() << "SELECT!";
     ui->runPlot->clearPlottables();
 	QVector<QString> labels;
 	QVector<double> ticks;
@@ -41,10 +45,10 @@ void DataExplorer::updateDetails() {
 		for (QCPAbstractPlottable *p : ui->selectEnvironment->selectedPlottables()) {
 			int unitid = p->property("UID").toInt();
 			int envid = p->property("EID").toInt();
-//			SimpleValue<double> vals = exp->environments.at(envid).integral(unitid,*exp);
-//			QCPStatisticalBox* b = new QCPStatisticalBox(ui->runPlot->xAxis,ui->runPlot->yAxis);
-//			b->setData(colid,vals.min(),vals.quantile(0.25),vals.median(),vals.quantile(0.75),vals.max());
-//			ui->runPlot->addPlottable(b);
+			StatisticalSet vals = exp->environments.at(envid).integral(unitid,*exp);
+			QCPStatisticalBox* b = new QCPStatisticalBox(ui->runPlot->xAxis,ui->runPlot->yAxis);
+			b->setData(colid,vals.min(),vals.quantile(0.25),vals.median(),vals.quantile(0.75),vals.max());
+			ui->runPlot->addPlottable(b);
 			labels.append(QString("%1 @ %2").arg(exp->data.at(unitid)->descriptor->name(),exp->environments.at(envid).label));
 			ticks.append(colid++);
 			ui->runPlot->xAxis->setAutoTicks(false);
@@ -91,6 +95,7 @@ void DataExplorer::updateEnvironment() {
 	ui->selectEnvironment->xAxis->setTickVector(ticks);
 	ui->selectEnvironment->xAxis->setTickVectorLabels(labels);
 	ui->selectEnvironment->setInteractions(QCP::iMultiSelect | QCP::iSelectPlottables);
+	ui->selectEnvironment->setSelectionTolerance(10);
 	ui->selectEnvironment->rescaleAxes();
 	ui->selectEnvironment->xAxis->scaleRange(1.1, ui->selectEnvironment->xAxis->range().center());
 	connect(ui->selectEnvironment,SIGNAL(selectionChangedByUser()), this, SLOT(updateDetails()));

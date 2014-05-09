@@ -23,6 +23,7 @@ public:
 	virtual QString descriptor() = 0;
 	virtual bool canExecute() const = 0;
 	virtual void execute(QString exec);
+	virtual bool isRunning() = 0;
 	virtual void setupEnvironment(const Experiment::Environment& env);
 
 public slots:
@@ -35,6 +36,7 @@ signals:
 	void descriptorsAvailable(QVector<const DataDescriptor*> descriptors);
 	void dataAvailable(const DataDescriptor* desc,double data, double time); //TODO
 	void connected();
+	void disconnected();
 };
 
 #endif // DATASOURCE_H

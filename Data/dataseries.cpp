@@ -18,22 +18,24 @@ DataSeries::DataSeries(const DataSeries &src) : QObject(src.parent()), descripto
 	_avg = src._avg;
 }
 
-DataSeries::DataSeries(const DataSeries &src, double from, double to) {
+DataSeries::DataSeries(const DataSeries &src, double from, double to, bool timeAdjust) :
+	descriptor(src.descriptor)
+{
 	int ctr = 0;
 	for (int i = 0; i < src.timestamps.size(); i++) {
 		double time = src.timestamps.at(i);
 		if (time >= from && time <= to) {
-			addValue(time,src.values.at(i));
+			addValue((timeAdjust)?time-from:time,src.values.at(i),false);
 			ctr++;
 		}
 	}
-	qDebug() << "Copied " << ctr << "values";
+	qDebug() << "Copied " << ctr << "values [" << from << "-" << to << "] of" << src.timestamps.size();
 }
 
 //TODO: requires values to be added in time order
-void DataSeries::addValue(double time, double value) {
+void DataSeries::addValue(double time, double value, bool scale) {
 	assert(timestamps.size() == 0 || time >= timestamps.last()); //If this is not true we have to recalculate avg :(
-	value *= descriptor->factor();
+	if (scale) value *= descriptor->factor();
 	//qDebug() << descriptor->str() << ": Adding " << value << "at time" << time;
 	if (value < _min) {
 		_min = value;

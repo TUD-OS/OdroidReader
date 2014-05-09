@@ -26,7 +26,7 @@ public:
 			QVector<QPair<double,double>> runs; //All datapoints for all repetitions
 			QString description() const;
 			StatisticalSet aggregate(int unit, const Experiment& e) const;
-			double  integral(int unit, const Experiment& e) const;
+			StatisticalSet integral(int unit, const Experiment& e) const;
 			DataSeries run(int unit, int run, const Experiment &e) const;
 	};
 
