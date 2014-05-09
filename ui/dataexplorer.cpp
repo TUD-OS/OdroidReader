@@ -1,8 +1,6 @@
 #include "dataexplorer.h"
 #include "ui_dataexplorer.h"
-#include <Data/o_datapoint.h>
 
-Q_DECLARE_METATYPE(SimpleValue<double>*)
 static QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254),QColor(91,53,40),QColor(133,196,77),
 					  QColor(104,115,15),QColor(133,3,43),QColor(188,186,111),QColor(168,115,19),QColor(63,184,67)});
 

@@ -4,7 +4,7 @@
 #include <QMainWindow>
 #include "experiment.h"
 #include <QVector>
-#include "Data/o_datapoint.h"
+#include <QModelIndex>
 #include "qcustomplot.h"
 #include <ui/dataexplorer.h>
 #include <Data/datasource.h>

@@ -1,4 +1,5 @@
 #include "environmentmodel.h"
+#include <QIcon>
 
 EnvironmentModel::EnvironmentModel(Experiment *exp, QObject *parent) :
 	QAbstractTableModel(parent), experiment(exp)

@@ -2,7 +2,6 @@
 #include <QMessageBox>
 #include <cassert>
 #include <QtEndian>
-#include <Data/o_datapoint.h>
 
 template<typename T>
 T networkDecode(QByteArray const &ba) {

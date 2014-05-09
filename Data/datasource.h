@@ -16,7 +16,7 @@ protected:
 	QString _name;
 	QVector<const DataDescriptor*> descs;
 public:
-	DataSource(QString names, QObject* parent);
+	DataSource(QString names, QObject* parent = nullptr);
 	DataSource(const DataSource&) = delete;
 	DataSource& operator=(const DataSource&) = delete;
 	inline const QString& name() const { return _name; }

@@ -6,7 +6,6 @@
 #include <QJsonObject>
 #include "Data/dataseries.h"
 #include "Data/statisticalset.h"
-#include <Data/o_datapoint.h>
 
 class Experiment
 {

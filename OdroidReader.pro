@@ -22,27 +22,25 @@ SOURCES += main.cpp\
     Data/datasource.cpp \
     ui/dataexplorer.cpp \
     Sources/networksource.cpp \
-    Data/o_datapoint.cpp \
     Data/dataseries.cpp \
     Data/statisticalset.cpp \
-    ui/tabstyle.cpp
+    ui/tabstyle.cpp \
+    Sources/odroidsmartpowersource.cpp
 
 HEADERS  += odroidreader.h \
     ipvalidator.h \
-    value.h \
     experiment.h \
     qcustomplot.h \
-    simplevalue.h \
     environmentmodel.h \
     environmentdelegate.h \
     Data/datadescriptor.h \
     Data/datasource.h \
     ui/dataexplorer.h \
     Sources/networksource.h \
-    Data/o_datapoint.h \
     Data/dataseries.h \
     Data/statisticalset.h \
-    ui/tabstyle.h
+    ui/tabstyle.h \
+    Sources/odroidsmartpowersource.h
 
 FORMS    += odroidreader.ui \
     ui/dataexplorer.ui
