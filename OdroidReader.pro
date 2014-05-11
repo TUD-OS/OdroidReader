@@ -10,7 +10,7 @@ TARGET = OdroidReader
 TEMPLATE = app
 
 QMAKE_CXXFLAGS += -std=c++11 -Wall -pedantic -Wextra -fno-strict-aliasing
-
+LIBS += -lhidapi-libusb
 SOURCES += main.cpp\
         odroidreader.cpp \
     ipvalidator.cpp \
@@ -25,7 +25,9 @@ SOURCES += main.cpp\
     Data/dataseries.cpp \
     Data/statisticalset.cpp \
     ui/tabstyle.cpp \
-    Sources/odroidsmartpowersource.cpp
+    Sources/odroidsmartpowersource.cpp \
+    devicemonitor.cpp \
+    smartpowermonitor.cpp
 
 HEADERS  += odroidreader.h \
     ipvalidator.h \
@@ -40,7 +42,9 @@ HEADERS  += odroidreader.h \
     Data/dataseries.h \
     Data/statisticalset.h \
     ui/tabstyle.h \
-    Sources/odroidsmartpowersource.h
+    Sources/odroidsmartpowersource.h \
+    devicemonitor.h \
+    smartpowermonitor.h
 
 FORMS    += odroidreader.ui \
     ui/dataexplorer.ui

@@ -15,6 +15,7 @@
 #include "environmentdelegate.h"
 #include <QJsonArray>
 #include <ui/tabstyle.h>
+#include <smartpowermonitor.h>
 #include <Sources/networksource.h>
 
 Q_DECLARE_METATYPE(const Experiment*)
@@ -33,7 +34,9 @@ OdroidReader::OdroidReader(QWidget *parent) :
 	ui->sourceType->tabBar()->setStyle(new TabStyle(Qt::Horizontal));
 	ui->sensors->setColumnWidth(0,30);
 	ui->globalPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
-
+	DeviceMonitor *dm = new SmartPowerMonitor();
+	devMonitors.append(dm);
+	dm->monitor(1000);
 	connect(ui->runSelected->menu(),&QMenu::triggered,this,&OdroidReader::runSelectedOnSource);
 	connect(ui->environment,SIGNAL(clicked(QModelIndex)),this,SLOT(removeEnvironment(QModelIndex)));
 	connect(ui->startSampling,&QPushButton::clicked,[this] () {

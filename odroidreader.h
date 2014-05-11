@@ -2,6 +2,7 @@
 #define ODROIDREADER_H
 
 #include <QMainWindow>
+#include <devicemonitor.h>
 #include "experiment.h"
 #include <QVector>
 #include <QModelIndex>
@@ -70,6 +71,7 @@ private:
   QVector<DataSource*> sources;
   QVector<Experiment*> experiments;
   QVector<QCPGraph*> graphs;
+  QVector<DeviceMonitor*> devMonitors;
 };
 
 #endif // ODROIDREADER_H
