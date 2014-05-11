@@ -20,6 +20,7 @@
 
 Q_DECLARE_METATYPE(const Experiment*)
 Q_DECLARE_METATYPE(DataSource*)
+Q_DECLARE_METATYPE(QListWidgetItem*)
 
 QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254),QColor(91,53,40),QColor(133,196,77),
 					  QColor(104,115,15),QColor(133,3,43),QColor(188,186,111),QColor(168,115,19),QColor(63,184,67)});
@@ -37,6 +38,20 @@ OdroidReader::OdroidReader(QWidget *parent) :
 	DeviceMonitor *dm = new SmartPowerMonitor();
 	devMonitors.append(dm);
 	dm->monitor(1000);
+    connect(dm,&DeviceMonitor::addSource,[this] (DataSource* src) {
+        ui->foundDevices->addItem(src->descriptor(),QVariant::fromValue(src));
+    });
+    connect(dm,&DeviceMonitor::removeSource, [this] (DataSource* src) {
+        if (sources.contains(src)) {
+            qDebug() << "Removing Source!";
+            if (src->isRunning()) src->start(); //Terminate if running
+            sources.remove(sources.indexOf(src));
+            delete src->property("Item").value<QListWidgetItem*>();
+        }
+        //TODO remove from sources if it has been added!
+       qDebug() << "Removed Source!";
+       ui->foundDevices->removeItem(ui->foundDevices->findData(QVariant::fromValue(src)));
+    });
 	connect(ui->runSelected->menu(),&QMenu::triggered,this,&OdroidReader::runSelectedOnSource);
 	connect(ui->environment,SIGNAL(clicked(QModelIndex)),this,SLOT(removeEnvironment(QModelIndex)));
 	connect(ui->startSampling,&QPushButton::clicked,[this] () {
@@ -310,20 +325,15 @@ void OdroidReader::on_addConnection_clicked()
 	connect(ns,SIGNAL(dataAvailable(const DataDescriptor*,double,double)),this,SLOT(addData(const DataDescriptor*,double,double)));
 	sources.append(ns);
 	QListWidgetItem* lwi = new QListWidgetItem(QIcon::fromTheme("network-disconnect"),ns->descriptor());
-	ui->sourceList->addItem(lwi);
+    ns->setProperty("Item",QVariant::fromValue(lwi));
+    ui->sourceList->addItem(lwi);
 	connect(ns,&NetworkSource::connected, [lwi,this]() {
 		lwi->setIcon(QIcon::fromTheme("network-connect"));
 	});
 	connect(ns,&NetworkSource::disconnected, [lwi,this]() {
 		lwi->setIcon(QIcon::fromTheme("network-disconnect"));
 	});
-	ui->runSelected->menu()->clear();
-	for (DataSource* ds : sources) {
-		if (ds->canExecute()) {
-			QAction* a = ui->runSelected->menu()->addAction(ds->descriptor());
-			a->setProperty("Source",QVariant::fromValue(ds));
-		}
-	}
+    updateRunnables();
 }
 
 void OdroidReader::addData(const DataDescriptor *desc, double value, double time) {
@@ -339,4 +349,39 @@ void OdroidReader::addDescriptors(QVector<const DataDescriptor *> descs) {
 	}
 	if (graphs.size() < data.size()) graphs.resize(data.size());
 	updateSensors();
+}
+
+void OdroidReader::on_pushButton_2_clicked()
+{
+    DataSource* src = ui->foundDevices->currentData().value<DataSource*>();
+    for (DataSource *s: sources) {
+        if (s->descriptor() == src->descriptor()) {
+            qDebug() << "Can only be added once!";
+            return;
+        }
+    }
+    connect(ui->startSampling,SIGNAL(clicked()),src,SLOT(start()));
+    connect(src,SIGNAL(descriptorsAvailable(QVector<const DataDescriptor*>)),this,SLOT(addDescriptors(QVector<const DataDescriptor*>)));
+    connect(src,SIGNAL(dataAvailable(const DataDescriptor*,double,double)),this,SLOT(addData(const DataDescriptor*,double,double)));
+    sources.append(src);
+    QListWidgetItem* lwi = new QListWidgetItem(QIcon::fromTheme("network-disconnect"),src->descriptor());
+    src->setProperty("Item",QVariant::fromValue(lwi));
+    ui->sourceList->addItem(lwi);
+    connect(src,&NetworkSource::connected, [lwi,this]() {
+        lwi->setIcon(QIcon::fromTheme("network-connect"));
+    });
+    connect(src,&NetworkSource::disconnected, [lwi,this]() {
+        lwi->setIcon(QIcon::fromTheme("network-disconnect"));
+    });
+    updateRunnables();
+}
+
+void OdroidReader::updateRunnables() {
+    ui->runSelected->menu()->clear();
+    for (DataSource* ds : sources) {
+        if (ds->canExecute()) {
+            QAction* a = ui->runSelected->menu()->addAction(ds->descriptor());
+            a->setProperty("Source",QVariant::fromValue(ds));
+        }
+    }
 }

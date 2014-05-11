@@ -2,12 +2,14 @@
 #define SMARTPOWERMONITOR_H
 
 #include "devicemonitor.h"
+#include "Sources/odroidsmartpowersource.h"
 #include <QTimer>
 
 class SmartPowerMonitor : public DeviceMonitor
 {
 Q_OBJECT
 private:
+    QVector<OdroidSmartPowerSource*> sources;
 	QTimer tmr;
 public:
 	SmartPowerMonitor();

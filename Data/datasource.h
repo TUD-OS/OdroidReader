@@ -23,7 +23,7 @@ public:
 	virtual QString descriptor() = 0;
 	virtual bool canExecute() const = 0;
 	virtual void execute(QString exec);
-	virtual bool isRunning() = 0;
+    virtual bool isRunning() const = 0;
 	virtual void setupEnvironment(const Experiment::Environment& env);
 
 public slots:

@@ -28,7 +28,7 @@ private:
 public:
 	NetworkSource(QString name, QString address, quint16 port, int interval, QObject *parent = nullptr);
 	virtual ~NetworkSource();
-	virtual bool isRunning() { return _running; }
+    virtual bool isRunning() const { return _running; }
 	inline virtual bool canExecute() const { return true; }
 	virtual void execute(QString exec);
 	virtual void setupEnvironment(const Experiment::Environment &env);
