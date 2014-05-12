@@ -63,5 +63,6 @@ void OdroidSmartPowerSource::start() {
 	} else {
 		emit disconnected();
 		_running = false;
-	}
+        //TODO: Implement stop
+    }
 }

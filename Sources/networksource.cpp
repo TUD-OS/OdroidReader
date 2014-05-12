@@ -111,9 +111,9 @@ void NetworkSource::readData() {
 					qDebug() << "Looks like we reconected successfully";
 				} else {
 					qRegisterMetaType<QVector<const DataDescriptor*>>("QVector<const DataDescriptor*>");
-					emit descriptorsAvailable(descs);
-				}
-				query = Query::GET;
+                    emit descriptorsAvailable(descs);
+                }
+                query = Query::GET;
 				getTimer.start();
 				return;
 			}

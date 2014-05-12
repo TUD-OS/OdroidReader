@@ -1,6 +1,7 @@
 #ifndef DATADESCRIPTOR_H
 #define DATADESCRIPTOR_H
 #include <QString>
+#include <QVector>
 
 class DataDescriptor
 {
