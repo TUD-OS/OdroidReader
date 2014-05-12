@@ -1,23 +1,40 @@
 #ifndef ODROIDSMARTPOWERSOURCE_H
 #define ODROIDSMARTPOWERSOURCE_H
 
-#include <Data/datasource.h>
-#include <hidapi/hidapi.h>
+#define _REQUEST_DATA      0x37
+#define _REQUEST_STARTSTOP 0x80
+#define _REQUEST_STATUS    0x81
+#define _REQUEST_ONOFF     0x82
+#define _REQUEST_VERSION   0x83
 
-class OdroidSmartPowerSource : public DataSource
+#include "qhidevice.h"
+#include <Data/datasource.h>
+#include <Data/datadescriptor.h>
+
+class OdroidSmartPowerSource : public DataSource, public QHIDevice
 {
-    QString _path;
-    hid_device* device;
+	enum class Command {
+		REQUEST_DATA      = 0x37,
+		REQUEST_STARTSTOP = 0x80,
+		REQUEST_STATUS    = 0x81,
+		REQUEST_ONOFF     = 0x82,
+		REQUEST_VERSION   = 0x83,
+		NONE              = 0x00
+	};
+	Command lastCmd;
+	QVector<const DataDescriptor*> descs;
+	bool _running, restarted;
+	QString _path;
+	int sendCommand(Command cmd, char param = 0x0);
 public:
-    OdroidSmartPowerSource(const char* path);
-    QString path() { return _path; }
-    bool canExecute() const { return false; }
-    bool isRunning() const { return false; }
-    QString descriptor();
+	OdroidSmartPowerSource(QString path);
+	QString path() { return _path; }
+	bool canExecute() const { return false; }
+	bool isRunning() const { return false; }
+	QString descriptor();
 
 public slots:
-    void start();
-
+	void start();
 };
 
 #endif // ODROIDSMARTPOWERSOURCE_H

@@ -25,7 +25,6 @@ public:
 	virtual void execute(QString exec);
     virtual bool isRunning() const = 0;
 	virtual void setupEnvironment(const Experiment::Environment& env);
-
 public slots:
 	virtual void start() = 0;
 

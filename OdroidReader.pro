@@ -48,3 +48,8 @@ HEADERS  += odroidreader.h \
 
 FORMS    += odroidreader.ui \
     ui/dataexplorer.ui
+
+unix:!macx: LIBS += -L$$PWD/../build-qhidapi-Desktop-Debug/ -lqhidapi
+
+INCLUDEPATH += $$PWD/../qhidapi
+DEPENDPATH += $$PWD/../qhidapi
