@@ -1,5 +1,4 @@
 #include "Sources/odroidsmartpowersource.h"
-
 #include <QDebug>
 #include <cassert>
 OdroidSmartPowerSource::OdroidSmartPowerSource(QString path) :

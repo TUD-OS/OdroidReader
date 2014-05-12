@@ -1,5 +1,31 @@
 #include "Sources/odroidsmartpowersource.h"
+<<<<<<< HEAD
 
+OdroidSmartPowerSource::OdroidSmartPowerSource(const char *path) :
+    DataSource("Odroid"), _running(false), reconnect(false), _path(path)
+{
+    descs.append(new DataDescriptor("U_ext","V",1,DataDescriptor::Type::FLOAT));
+    descs.append(new DataDescriptor("I_ext","A",1,DataDescriptor::Type::FLOAT));
+    descs.append(new DataDescriptor("P_ext","W",1,DataDescriptor::Type::FLOAT));
+}
+
+QString OdroidSmartPowerSource::descriptor() {
+    return "[DEV] Odroid Smart Power " + _path;
+}
+
+void OdroidSmartPowerSource::start() {
+    if (!_running) {
+        if (!reconnect)
+            emit descriptorsAvailable(descs);
+        _running = true;
+        reconnect = true;
+        emit connected();
+    } else  {
+        _running = false;
+        emit disconnected();
+        //TODO: Implement stop
+    }
+=======
 #include <QDebug>
 #include <cassert>
 OdroidSmartPowerSource::OdroidSmartPowerSource(QString path) :
@@ -65,4 +91,5 @@ void OdroidSmartPowerSource::start() {
 		emit disconnected();
 		_running = false;
 	}
+>>>>>>> 7e8901ca987329497cec622a647ed416266a7e62
 }

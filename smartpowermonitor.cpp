@@ -1,6 +1,7 @@
 #include "smartpowermonitor.h"
-#include <hidapi/hidapi.h>
+#include <qhidmanager.h>
 #include <cassert>
+
 
 #include <QDebug>
 SmartPowerMonitor::SmartPowerMonitor()
@@ -16,15 +17,13 @@ void SmartPowerMonitor::monitor(quint32 interval_ms) {
 }
 
 void SmartPowerMonitor::checkDevices() {
-	struct hid_device_info *devs, *cur_dev;
-	devs = hid_enumerate(0x04d8, 0x003f);
-	cur_dev = devs;
-	qDebug() << "Devices:";
+	QVector<QHIDInfo> devs = QHIDManager::get().enumerate(0x04d8,0x003f);
     QList<OdroidSmartPowerSource*> toDelete = sources.toList();
-	while (cur_dev) {
+	//Delete obsoletes
+	for (QHIDInfo info : devs) {
         bool newEntry = true;
         for (OdroidSmartPowerSource* s : sources) {
-            if (s->path() == cur_dev->path) {
+			if (s->path() == info.path) {
                 assert(toDelete.contains(s));
                 toDelete.removeAll(s);
                 assert(!toDelete.contains(s));
@@ -33,14 +32,13 @@ void SmartPowerMonitor::checkDevices() {
             }
         }
         if (newEntry) {
-            sources.append(new OdroidSmartPowerSource(cur_dev->path));
+			sources.append(new OdroidSmartPowerSource(info.path.toStdString().c_str()));
             emit addSource(sources.last());
-            qDebug() << "Serial      : " << QString::fromWCharArray(cur_dev->serial_number);
-            qDebug() << "Manufacturer: " << QString::fromWCharArray(cur_dev->manufacturer_string);
-            qDebug() << "Product     : " << QString::fromWCharArray(cur_dev->product_string);
-            qDebug() << "Other:      : " << cur_dev->path << "\n";
+			qDebug() << "Serial      : " << info.serial_number;
+			qDebug() << "Manufacturer: " << info.manufacturer_string;
+			qDebug() << "Product     : " << info.product_string;
+			qDebug() << "Other:      : " << info.path << "\n";
         }
-        cur_dev = cur_dev->next;
     }
     for (int i = 0; i < sources.size(); i++) {
         qDebug() << "Checking " << i;
@@ -49,8 +47,6 @@ void SmartPowerMonitor::checkDevices() {
            emit removeSource(sources.at(i));
            delete sources.at(i);
            sources.remove(i);
-
         }
     }
-    hid_free_enumeration(devs);
 }
