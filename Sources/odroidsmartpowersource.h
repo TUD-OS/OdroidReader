@@ -25,6 +25,9 @@ class OdroidSmartPowerSource : public DataSource, public QHIDevice
 	QVector<const DataDescriptor*> descs;
 	bool _running, restarted;
 	QString _path;
+	QTimer getDataTmr;
+private slots:
+	void getData();
 	int sendCommand(Command cmd, char param = 0x0);
 public:
 	OdroidSmartPowerSource(QString path);
