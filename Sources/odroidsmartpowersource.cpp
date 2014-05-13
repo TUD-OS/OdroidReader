@@ -1,7 +1,19 @@
 #include "Sources/odroidsmartpowersource.h"
 #include <QDebug>
 #include <cassert>
+#include <iostream>
 #include <QDateTime>
+
+void hexDump(const QByteArray &ba) {
+    for (int i = 0; i < ba.size();i++) {
+        if (i%16 == 0) {
+            std::cerr << std::endl;
+            std::cerr << ba.mid(i,std::min(16,ba.size()-i)).data() << "  ";
+        }
+        std::cerr << "0x" << ba.mid(i,1).toHex().data() << " ";
+    }
+    std::cerr << std::endl;
+}
 
 OdroidSmartPowerSource::OdroidSmartPowerSource(QString path) :
     DataSource("Odroid"), QHIDevice(path), lastCmd(Command::NONE), _running(false), restarted(false), _path(path)
@@ -19,10 +31,9 @@ OdroidSmartPowerSource::OdroidSmartPowerSource(QString path) :
 	QHIDevice::connect(this,&QHIDevice::receivedData,[this] (QByteArray data) {
 		assert(data.size() == 64);
 		assert(lastCmd != Command::NONE);
-		assert(data[0] = static_cast<char>(lastCmd));
-//		qDebug() << "Got: " << data;
-//		qDebug() << "Hex: " << data.toHex();
         double lastTime = QDateTime::currentMSecsSinceEpoch()/1000.0;
+//		qDebug() << "Got: " << data;
+//        hexDump(data);
 		switch (lastCmd) {
 		  case Command::REQUEST_VERSION:
 				sendCommand(Command::REQUEST_STATUS);
