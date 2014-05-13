@@ -136,10 +136,10 @@ void OdroidReader::updateSensors() {
 		ui->sensors->setItem(i,0,new QTableWidgetItem(""));
 		ui->sensors->item(i,0)->setCheckState(Qt::Unchecked);
 		ui->sensors->setItem(i,1,new QTableWidgetItem(d->descriptor->name()));
-		ui->sensors->setItem(i,2,new QTableWidgetItem("0")); //last
-		ui->sensors->setItem(i,3,new QTableWidgetItem("0")); //min
-		ui->sensors->setItem(i,4,new QTableWidgetItem("0")); //max
-		ui->sensors->setItem(i,5,new QTableWidgetItem("0")); //max
+        ui->sensors->setItem(i,2,new QTableWidgetItem(QString::number(d->getLast()))); //last
+        ui->sensors->setItem(i,3,new QTableWidgetItem(QString::number(d->getMin()))); //min
+        ui->sensors->setItem(i,4,new QTableWidgetItem(QString::number(d->getMax()))); //max
+        ui->sensors->setItem(i,5,new QTableWidgetItem(QString::number(d->getAvg()))); //avg
 		connect(d,&DataSeries::newValue,[this,i](double, double val) { ui->sensors->item(i,2)->setText(QString::number(val));});
 		connect(d,&DataSeries::newMin,[this,i](double val) { ui->sensors->item(i,3)->setText(QString::number(val));});
 		connect(d,&DataSeries::newMax,[this,i](double val) { ui->sensors->item(i,4)->setText(QString::number(val));});
@@ -359,7 +359,8 @@ void OdroidReader::addDescriptors(QVector<const DataDescriptor *> descs) {
 	for (const DataDescriptor* d : descs) {
 		if (static_cast<signed int>(d->uid()) >= data.size()) //!TODO
 			data.resize(d->uid()+1);
-		data[d->uid()] = new DataSeries(d);
+        if (data.at(d->uid()) == nullptr)
+            data[d->uid()] = new DataSeries(d);
 	}
 	if (graphs.size() < data.size()) graphs.resize(data.size());
 	updateSensors();

@@ -26,6 +26,7 @@ public:
 	double getAvg() const { return _avg; }
 	double getMin() const { return _min; }
 	double getMax() const { return _max; }
+    double getLast() const { return (values.size()==0)?NAN:values.last(); }
 signals:
 	void newMax(double max);
 	void newMin(double min);
