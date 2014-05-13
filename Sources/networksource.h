@@ -9,6 +9,7 @@ class NetworkSource : public DataSource
 {
 	Q_OBJECT
 private:
+    QVector<const DataDescriptor*> descs;
 	typedef enum class {
 		DESC = 0,
 		GET = 1,
@@ -24,7 +25,7 @@ private:
 	qint64 packetSize;
 	qint64 recon_ctr;
 	bool started, _running, reconnect;
-	double lastTime;
+    double lastTime;
 public:
 	NetworkSource(QString name, QString address, quint16 port, int interval, QObject *parent = nullptr);
 	virtual ~NetworkSource();
@@ -47,6 +48,7 @@ public slots:
 	void readData();
 protected:
 	virtual void start();
+    virtual void stop();
 };
 
 #endif // NETWORKSOURCE_H

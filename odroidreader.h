@@ -51,7 +51,7 @@ private slots:
   void addDescriptors(QVector<const DataDescriptor *> descriptors);
   void addData(const DataDescriptor* desc, double data, double time);
 
-  void on_pushButton_2_clicked();
+  void on_addDevice_clicked();
 
 private:
   void updateSensors();

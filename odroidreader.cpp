@@ -52,15 +52,28 @@ OdroidReader::OdroidReader(QWidget *parent) :
        qDebug() << "Removed Source!";
        ui->foundDevices->removeItem(ui->foundDevices->findData(QVariant::fromValue(src)));
     });
+    ui->stopSampling->hide();
+
 	connect(ui->runSelected->menu(),&QMenu::triggered,this,&OdroidReader::runSelectedOnSource);
 	connect(ui->environment,SIGNAL(clicked(QModelIndex)),this,SLOT(removeEnvironment(QModelIndex)));
-	connect(ui->startSampling,&QPushButton::clicked,[this] () {
-		static bool start = false;
-		start = !start;
-		ui->startSampling->setText((start)?"Stop":"Start");
-		ui->startSampling->setIcon(QIcon::fromTheme((start)?"media-playback-stop":"media-record"));
-	});
-	connect(qApp,SIGNAL(aboutToQuit()),this,SLOT(aboutToQuit()));
+    connect(ui->stopSampling,&QPushButton::clicked,[this]() {
+        ui->addDevice->setEnabled(true);
+        ui->addConnection->setEnabled(true);
+    });
+    connect(ui->startSampling,&QPushButton::clicked,[this]() {
+        ui->addDevice->setEnabled(false);
+        ui->addConnection->setEnabled(false);
+    });
+    connect(ui->startSampling,&QPushButton::clicked,[this] () {
+        ui->startSampling->hide();
+        ui->stopSampling->show();
+    });
+    connect(ui->stopSampling,&QPushButton::clicked,[this] () {
+        for (DataSource* src : sources) src->stop();
+        ui->startSampling->show();
+        ui->stopSampling->hide();
+    });
+    connect(qApp,SIGNAL(aboutToQuit()),this,SLOT(aboutToQuit()));
 
 	//Load state ...
 	QFile f("experiments.json");
@@ -342,6 +355,7 @@ void OdroidReader::addData(const DataDescriptor *desc, double value, double time
 }
 
 void OdroidReader::addDescriptors(QVector<const DataDescriptor *> descs) {
+    qDebug() << "Adding" << descs.size() << "descriptors.";
 	for (const DataDescriptor* d : descs) {
 		if (static_cast<signed int>(d->uid()) >= data.size()) //!TODO
 			data.resize(d->uid()+1);
@@ -351,7 +365,7 @@ void OdroidReader::addDescriptors(QVector<const DataDescriptor *> descs) {
 	updateSensors();
 }
 
-void OdroidReader::on_pushButton_2_clicked()
+void OdroidReader::on_addDevice_clicked()
 {
     DataSource* src = ui->foundDevices->currentData().value<DataSource*>();
     for (DataSource *s: sources) {

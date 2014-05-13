@@ -64,7 +64,7 @@
            <enum>QTabWidget::West</enum>
           </property>
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="tab">
            <attribute name="title">
@@ -225,7 +225,7 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QPushButton" name="pushButton_2">
+             <widget class="QPushButton" name="addDevice">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -236,7 +236,9 @@
                <string>Add</string>
               </property>
               <property name="icon">
-               <iconset theme="list-add"/>
+               <iconset theme="list-add">
+                <normaloff/>
+               </iconset>
               </property>
              </widget>
             </item>
@@ -275,6 +277,18 @@
             </property>
             <property name="icon">
              <iconset theme="media-record">
+              <normaloff/>
+             </iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="stopSampling">
+            <property name="text">
+             <string>Stop</string>
+            </property>
+            <property name="icon">
+             <iconset theme="media-playback-stop">
               <normaloff/>
              </iconset>
             </property>

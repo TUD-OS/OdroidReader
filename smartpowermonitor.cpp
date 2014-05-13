@@ -41,9 +41,7 @@ void SmartPowerMonitor::checkDevices() {
         }
     }
     for (int i = 0; i < sources.size(); i++) {
-        qDebug() << "Checking " << i;
         if (toDelete.contains(sources[i])) {
-           qDebug() << "Removing " << i;
            emit removeSource(sources.at(i));
            delete sources.at(i);
            sources.remove(i);

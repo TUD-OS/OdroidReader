@@ -38,6 +38,7 @@ public:
 
 public slots:
 	void start();
+    void stop();
 };
 
 #endif // ODROIDSMARTPOWERSOURCE_H
