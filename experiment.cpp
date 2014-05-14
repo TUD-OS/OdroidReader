@@ -2,9 +2,6 @@
 #include "odroidreader.h"
 #include <QJsonArray>
 
-//Experiment::Experiment()
-//{}
-
 Experiment::Experiment(QJsonObject& jo, const QVector<DataSeries *> &descs)
 	: wasRun(false), data(descs)
 {
@@ -23,13 +20,24 @@ Experiment::Experiment(QJsonObject& jo, const QVector<DataSeries *> &descs)
 		e.freq_max = o["frequency_max"].toInt();
 		e.freq_min = o["frequency_min"].toInt();
 		e.governor = o["governor"].toString();
+		if (o.contains("runs")) {
+			QJsonArray ra = o["runs"].toArray();
+			for (int j = 0; j < ra.size(); j++) {
+				QJsonObject ro = ra.at(j).toObject();
+				QPair<double,double> v;
+				v.first = ro["from"].toDouble();
+				v.second = ro["to"].toDouble();
+				e.runs.push_back(v);
+				wasRun = true;
+			}
+		}
 		environments.push_back(e);
 	}
 	cooldown_time = jo["cooldown_time"].toInt();
 	tail_time = jo["tail_time"].toInt();
 }
 
-void Experiment::write(QJsonObject& jo) const {
+void Experiment::write(QJsonObject& jo, bool withRuns) const {
 	jo["title"] = title;
 	jo["prepare"] = prepare;
 	jo["cleanup"] = cleanup;
@@ -44,6 +52,16 @@ void Experiment::write(QJsonObject& jo) const {
 		o["frequency_max"] = static_cast<qint64>(e.freq_max);
 		o["frequency_min"] = static_cast<qint64>(e.freq_min);
 		o["governor"] = e.governor;
+		if (withRuns) {
+			QJsonArray runArray;
+			for (QPair<double,double> run : e.runs) {
+				QJsonObject jr;
+				jr["from"] = run.first;
+				jr["to"] = run.second;
+				runArray.push_back(jr);
+			}
+			o["runs"] = runArray;
+		}
 		envs.append(o);
 	}
 	jo["environments"] = envs;

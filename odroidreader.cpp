@@ -11,6 +11,7 @@
 #include "qcustomplot.h"
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QFileDialog>
 #include "environmentmodel.h"
 #include "environmentdelegate.h"
 #include <QJsonArray>
@@ -26,7 +27,7 @@ QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254)
 					  QColor(104,115,15),QColor(133,3,43),QColor(188,186,111),QColor(168,115,19),QColor(63,184,67)});
 
 OdroidReader::OdroidReader(QWidget *parent) :
-	QMainWindow(parent), es(ExperimentState::Idle),
+	QMainWindow(parent), hasExecuted(false), isLoaded(false), es(ExperimentState::Idle),
 	ui(new Ui::OdroidReader), currentExp(nullptr), currentEnv(nullptr)
 {
 	ui->setupUi(this);
@@ -53,6 +54,7 @@ OdroidReader::OdroidReader(QWidget *parent) :
        ui->foundDevices->removeItem(ui->foundDevices->findData(QVariant::fromValue(src)));
     });
     ui->stopSampling->hide();
+	ui->loadProgress->hide();
 
 	connect(ui->runSelected->menu(),&QMenu::triggered,this,&OdroidReader::runSelectedOnSource);
 	connect(ui->environment,SIGNAL(clicked(QModelIndex)),this,SLOT(removeEnvironment(QModelIndex)));
@@ -61,6 +63,7 @@ OdroidReader::OdroidReader(QWidget *parent) :
         ui->addConnection->setEnabled(true);
     });
     connect(ui->startSampling,&QPushButton::clicked,[this]() {
+		hasExecuted = true;
         ui->addDevice->setEnabled(false);
         ui->addConnection->setEnabled(false);
     });
@@ -107,8 +110,8 @@ void OdroidReader::updateCurve(int row, int col) {
 		QColor color = origcols.takeFirst();
 		graphs[row] = ui->globalPlot->addGraph();
 		graphs[row]->setPen(color);
-		graphs.at(row)->setData(data.at(row)->getTimestamps(), data.at(row)->getValues());
-		connect(data.at(row),&DataSeries::newValue,[row,this](double time, double value) {
+		graphs.at(row)->setData(data.at(rowMap[row])->getTimestamps(), data.at(rowMap[row])->getValues());
+		connect(data.at(rowMap[row]),&DataSeries::newValue,[row,this](double time, double value) {
 			graphs.at(row)->addData(time,value);
 			ui->globalPlot->rescaleAxes();
 			ui->globalPlot->yAxis->scaleRange(1.2,ui->globalPlot->yAxis->range().center());
@@ -116,7 +119,7 @@ void OdroidReader::updateCurve(int row, int col) {
 		});
 		ui->sensors->item(row,col)->setBackgroundColor(color);
 	} else if (!enable && graphs.at(row) != nullptr){
-		disconnect(data.at(row),SIGNAL(newValue(double,double)),0,0);
+		disconnect(data.at(rowMap[row]),SIGNAL(newValue(double,double)),0,0);
 		origcols.push_front(graphs.at(row)->pen().color());
 		ui->globalPlot->removeGraph(graphs.at(row));
 		graphs[row] = nullptr;
@@ -129,10 +132,12 @@ void OdroidReader::updateCurve(int row, int col) {
 
 void OdroidReader::updateSensors() {
 	ui->sensors->setRowCount(data.size());
+	rowMap.clear();
 	//TODO: Shound we remove old data?
 	int i = 0;
 	for (DataSeries* d : data) {
 		if (d == nullptr) continue;
+		rowMap.push_back(d->descriptor->uid());
 		ui->sensors->setItem(i,0,new QTableWidgetItem(""));
 		ui->sensors->item(i,0)->setCheckState(Qt::Unchecked);
 		ui->sensors->setItem(i,1,new QTableWidgetItem(d->descriptor->name()));
@@ -264,11 +269,9 @@ void OdroidReader::runExperiments(DataSource& source, double time = 0) {
 				}
 			} else {
 				ui->expSelect->clear();
-				for (const Experiment* e : experiments) {
-					if (e->hasData()) {
+				for (const Experiment* e : experiments)
+					if (e->hasData())
 						ui->expSelect->addItem(e->title,QVariant::fromValue(e));
-					}
-				}
 				ui->experiments->setEnabled(true);
 				disconnect(&source,SIGNAL(commandFinished(DataSource&,double)),0,0);
 			}
@@ -290,16 +293,39 @@ void OdroidReader::runSelectedOnSource(const QAction *act)
 
 void OdroidReader::aboutToQuit()
 {
+	if (isLoaded) return; //Do not save if we just looked at data
 	//Saving state...
 	QFile f("experiments.json");
 	if (!f.open(QFile::WriteOnly)) {
 		qWarning() << "Could not save experiments!";
 	};
-	QJsonArray experimentArray;
+	QFile res("Results_"+QDateTime::currentDateTime().toString()+".json.z");
+	QJsonObject testRun;
+	if (hasExecuted) {
+		if (!res.open(QFile::WriteOnly)) {
+			qWarning() << "Could not save runs :(!";
+		}
+		//TODO: Only when started!
+		QJsonArray datas;
+		for (DataSeries *ds : data) {
+			QJsonObject series;
+			series["descriptor"] = ds->descriptor->json();
+			series["data"] = ds->json();
+			datas.push_back(series);
+		}
+		testRun["dataseries"] = datas;
+	}
+	QJsonArray experimentArray, runArray;
 	for (Experiment* e : experiments) {
-		QJsonObject experimentData;
+		QJsonObject experimentData,experimentRun;
 		e->write(experimentData);
+		e->write(experimentRun,true);
+		runArray.append(experimentRun);
 		experimentArray.append(experimentData);
+	}
+	if (hasExecuted) {
+		testRun["experimentRuns"] = runArray;
+		res.write(qCompress(QJsonDocument(testRun).toJson()));
 	}
 	f.write(QJsonDocument(experimentArray).toJson());
 }
@@ -399,4 +425,52 @@ void OdroidReader::updateRunnables() {
             a->setProperty("Source",QVariant::fromValue(ds));
         }
     }
+}
+
+void OdroidReader::on_loadData_clicked()
+{
+	if (hasExecuted) {
+		int r = QMessageBox::question(this,"Discard experiment data?","Loading another experiment will discard all existing experiment data and experiment definitions! Do you really want to do this?");
+		if (r == QMessageBox::No) return;
+	}
+	QString fileName = QFileDialog::getOpenFileName(this, "Open Experiment","","Compressed experiments (*.json.z)");
+	if (fileName.isNull()) return;
+	QFile f(fileName);
+	if (!f.open(QFile::ReadOnly)) {
+		QMessageBox::information(this,"Unable to load file","The experiment file "+fileName+" could not be opened for reading!");
+		return;
+	};
+	hasExecuted = false;
+	isLoaded = true;
+	experiments.clear();
+	data.clear();
+	ui->sampleTab->setEnabled(false);
+
+	QJsonObject experimentObject = QJsonDocument::fromJson(qUncompress(f.readAll())).object();
+	ui->loadProgress->show();
+	QJsonArray ea = experimentObject["experimentRuns"].toArray();
+	for (int exp = 0; exp < ea.size(); ++exp) {
+		QJsonObject experimentData = ea[exp].toObject();
+		experiments.append(new Experiment(experimentData, data));
+	}
+	QJsonArray da = experimentObject["dataseries"].toArray();
+	ui->loadProgress->setValue(0);
+	QVector<const DataDescriptor*> descs;
+	for (int d = 0; d < da.size(); ++d) {
+		QJsonObject datao = da.at(d).toObject();
+		descs.push_back(new DataDescriptor(datao["descriptor"].toObject()));
+	}
+	addDescriptors(descs);
+	for (int d = 0; d < da.size(); ++d) {
+		QJsonObject datao = da.at(d).toObject();
+		data[descs[d]->uid()]->fromJson(datao["data"].toObject());
+		ui->loadProgress->setValue((d+1)*100.0/da.size());
+		QCoreApplication::processEvents(); //TODO: Hack
+	}
+	ui->expSelect->clear();
+	for (const Experiment* e : experiments)
+		if (e->hasData())
+			ui->expSelect->addItem(e->title,QVariant::fromValue(e));
+	ui->loadProgress->hide();
+	updateExperiments();
 }

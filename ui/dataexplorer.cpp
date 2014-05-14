@@ -118,9 +118,9 @@ void DataExplorer::on_runNo_valueChanged(int)
 	on_dispUnit_currentIndexChanged(ui->dispUnit->currentIndex());
 	for (int i : selectedM)
 		ui->selectMetric->plottable(i)->setSelected(true);
+	updateEnvironment();
 	for (int i : selectedE)
 		ui->selectEnvironment->plottable(i)->setSelected(true);
-	updateEnvironment();
 	updateDetails();
 	ui->selectMetric->replot();
 }
@@ -134,12 +134,13 @@ void DataExplorer::on_dispUnit_currentIndexChanged(int)
 	QVector<QString> labels;
 	int i = -1;
 	for (DataSeries* p : exp->data) {
-		++i;
+		if (p == nullptr) continue;
 		if (p->descriptor->unit() != ui->dispUnit->currentText()) continue;
-		StatisticalSet v = exp->aggregate(i,*exp);
+		++i;
+		StatisticalSet v = exp->aggregate(p->descriptor->uid(),*exp);
 		QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectMetric->xAxis,ui->selectMetric->yAxis);
 		b->setBrush(boxBrush);
-		b->setProperty("UID",i);
+		b->setProperty("UID",p->descriptor->uid());
 		b->setData(i,v.min(),v.quantile(0.25),v.median(),v.quantile(0.75),v.max());
 		ui->selectMetric->addPlottable(b);
 		ticks.append(i);
@@ -164,12 +165,15 @@ void DataExplorer::on_dispUnit_currentIndexChanged(int)
 
 void DataExplorer::setExperiment(const Experiment *exp) {
 	this->exp = exp;
+	ui->runNo->setMaximum(exp->environments.first().runs.size()-1);
 	if (exp != nullptr) {
 		on_runNo_valueChanged(0);
 
 		for (DataSeries const *p : exp->data) {
-			if (ui->dispUnit->findText(p->descriptor->unit()) == -1)
+			if (p == nullptr) continue;
+			if (ui->dispUnit->findText(p->descriptor->unit()) == -1) {
 				ui->dispUnit->addItem(p->descriptor->unit());
+			}
 		}
 	}
 }

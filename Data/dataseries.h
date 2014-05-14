@@ -4,6 +4,7 @@
 #include <Data/datadescriptor.h>
 #include <QObject>
 #include <QVector>
+#include <QJsonObject>
 #include <QPair>
 
 class DataSeries : public QObject
@@ -26,6 +27,8 @@ public:
 	double getAvg() const { return _avg; }
 	double getMin() const { return _min; }
 	double getMax() const { return _max; }
+	void fromJson(const QJsonObject& jo);
+	QJsonObject json() const;
     double getLast() const { return (values.size()==0)?NAN:values.last(); }
 signals:
 	void newMax(double max);

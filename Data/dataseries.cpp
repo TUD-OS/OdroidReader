@@ -2,6 +2,7 @@
 #include <limits>
 #include <cassert>
 #include <QDebug>
+#include <QJsonArray>
 
 DataSeries::DataSeries(const DataDescriptor *desc, QObject *parent)
 	: QObject(parent), descriptor(desc),
@@ -34,6 +35,7 @@ DataSeries::DataSeries(const DataSeries &src, double from, double to, bool timeA
 
 //TODO: requires values to be added in time order
 void DataSeries::addValue(double time, double value, bool scale) {
+//	if (timestamps.size() > 0) qDebug() << time << "vs." << timestamps.last();
 	assert(timestamps.size() == 0 || time >= timestamps.last()); //If this is not true we have to recalculate avg :(
 	if (scale) value *= descriptor->factor();
 	//qDebug() << descriptor->str() << ": Adding " << value << "at time" << time;
@@ -59,4 +61,23 @@ void DataSeries::addValue(double time, double value, bool scale) {
 	}
 	emit newValue(time,value);
 	emit valuesUpdated(timestamps,values);
+}
+
+QJsonObject DataSeries::json() const {
+	QJsonArray vals, times;
+	for (double value : values)
+		vals.push_back(value);
+	for (double time : timestamps)
+		times.push_back(time);
+	QJsonObject jo;
+	jo["values"] = vals;
+	jo["timestamps"] = times;
+	return jo;
+}
+
+void DataSeries::fromJson(const QJsonObject &jo) {
+	QJsonArray times = jo["timestamps"].toArray();
+	QJsonArray vals = jo["values"].toArray();
+	for (int i = 0; i < times.size(); i++)
+		addValue(times.at(i).toDouble(),vals.at(i).toDouble(),false);
 }

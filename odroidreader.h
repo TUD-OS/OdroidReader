@@ -53,12 +53,15 @@ private slots:
 
   void on_addDevice_clicked();
 
+  void on_loadData_clicked();
+
 private:
   void updateSensors();
   void updateExperiments();
   void updateRunnables();
   int repetition;
   int lastEnv;
+  bool hasExecuted, isLoaded;
   ExperimentState es;
   Experiment const* curExp;
   std::vector<Experiment*> toRun;
@@ -74,6 +77,7 @@ private:
   QVector<DataSource*> sources;
   QVector<Experiment*> experiments;
   QVector<QCPGraph*> graphs;
+  QVector<int> rowMap;
   QVector<DeviceMonitor*> devMonitors;
 };
 

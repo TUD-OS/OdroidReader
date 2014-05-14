@@ -34,7 +34,7 @@ public:
 
 	Experiment(QJsonObject &jo, const QVector<DataSeries*>& data);
 	Experiment() = delete;
-	void write(QJsonObject &jo) const;
+	void write(QJsonObject &jo, bool withRuns = false) const;
 	StatisticalSet aggregate(int unit, const Experiment& e) const;
 	bool hasData() const;
 	QVector<Environment> environments;

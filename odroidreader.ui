@@ -45,9 +45,9 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
-      <widget class="QWidget" name="sample">
+      <widget class="QWidget" name="sampleTab">
        <attribute name="title">
         <string>Sample</string>
        </attribute>
@@ -302,7 +302,7 @@
        <attribute name="title">
         <string>Load</string>
        </attribute>
-       <layout class="QHBoxLayout" name="horizontalLayout_9">
+       <layout class="QVBoxLayout" name="verticalLayout_8">
         <item>
          <widget class="QPushButton" name="loadData">
           <property name="sizePolicy">
@@ -318,6 +318,13 @@
            <iconset theme="document-open">
             <normaloff/>
            </iconset>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QProgressBar" name="loadProgress">
+          <property name="value">
+           <number>0</number>
           </property>
          </widget>
         </item>
@@ -711,8 +718,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>891</width>
-               <height>461</height>
+               <width>94</width>
+               <height>24</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_7"/>

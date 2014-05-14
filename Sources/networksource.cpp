@@ -128,6 +128,7 @@ void NetworkSource::readData() {
 				QString _name = ba.left(name_len).constData();
 				ba.remove(0,name_len);
 				QString _unit = ba.constData();
+				_unit = _unit.trimmed();
 				if (reconnect) {
 					assert(descs.at(recon_ctr)->name() == _name &&
 					descs.at(recon_ctr)->name() == _name &&

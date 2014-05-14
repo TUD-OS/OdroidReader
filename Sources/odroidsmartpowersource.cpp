@@ -48,7 +48,7 @@ OdroidSmartPowerSource::OdroidSmartPowerSource(QString path) :
                 emit dataAvailable(descs.at(0),QString(data.mid(2,5)).toFloat(),lastTime);
 				if (data.at(10) != '-') {
                     emit dataAvailable(descs.at(1),QString(data.mid(10,5)).toFloat(),lastTime);
-                    emit dataAvailable(descs.at(2),QString(data.mid(18,5)).toFloat(),lastTime);
+					emit dataAvailable(descs.at(2),QString(data.mid(17,6)).toFloat(),lastTime);
                     emit dataAvailable(descs.at(3),QString(data.mid(24,5)).toFloat(),lastTime);
 				} else {
                     emit dataAvailable(descs.at(1),0,lastTime);
