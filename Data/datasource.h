@@ -5,8 +5,8 @@
 #include <QObject>
 #include <QMap>
 #include <QVector>
-#include <experiment.h>
 #include <Data/datadescriptor.h>
+#include "environment.h"
 
 Q_DECLARE_METATYPE(QVector<const DataDescriptor*>)
 
@@ -28,7 +28,7 @@ public:
 	virtual bool canExecute() const = 0;
 	virtual void execute(QString exec);
     virtual bool isRunning() const = 0;
-	virtual void setupEnvironment(const Experiment::Environment& env);
+	virtual void setupEnvironment(const Environment* env);
 public slots:
 	virtual void start() = 0;
     virtual void stop() = 0;

@@ -32,7 +32,7 @@ public:
     virtual bool isRunning() const { return _running; }
 	inline virtual bool canExecute() const { return true; }
 	virtual void execute(QString exec);
-	virtual void setupEnvironment(const Experiment::Environment &env);
+	virtual void setupEnvironment(const Environment *env) override;
 	inline const QString& address() { return _address; }
 	inline quint16 port() { return _port; }
     inline virtual QString descriptor() { return QString("[Net] %1 @ %2:%3").arg(_name,_address,QString::number(_port)); }

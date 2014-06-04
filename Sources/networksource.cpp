@@ -156,19 +156,20 @@ void NetworkSource::execute(QString exec) {
 		emit commandFinished(*this,lastTime);
 		return;
 	}
+	qDebug() << "Executing: " << exec;
 	assert(started == false); //TODO! This implies single instances
 	socket.write("EXEC\n");
 	socket.write(exec.append("\n").toStdString().c_str());
 }
 
-void NetworkSource::setupEnvironment(const Experiment::Environment &env) {
+void NetworkSource::setupEnvironment(const Environment* env) {
 	socket.write("SETUP\n");
-	socket.write(QString("%1\n").arg(env.governor).toStdString().c_str());
-	qDebug() << "Governor is:" << env.governor << env.freq << env.freq_min << "-" << env.freq_max;
-	if (env.governor == "userspace")
-		socket.write(std::to_string(env.freq).append("000\n").c_str());
-	socket.write(std::to_string(env.freq_min).append("000\n").c_str());
-	socket.write(std::to_string(env.freq_max).append("000\n").c_str());
+	socket.write(QString("%1\n").arg(env->governor).toStdString().c_str());
+	qDebug() << "Governor is:" << env->governor << env->freq << env->freq_min << "-" << env->freq_max;
+	if (env->governor == "userspace")
+		socket.write(std::to_string(env->freq).append("000\n").c_str());
+	socket.write(std::to_string(env->freq_min).append("000\n").c_str());
+	socket.write(std::to_string(env->freq_max).append("000\n").c_str());
 }
 
 void NetworkSource::start() {

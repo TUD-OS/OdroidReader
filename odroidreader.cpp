@@ -12,7 +12,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QFileDialog>
-#include "environmentmodel.h"
 #include "environmentdelegate.h"
 #include <QJsonArray>
 #include <ui/tabstyle.h>
@@ -28,10 +27,11 @@ QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254)
 
 OdroidReader::OdroidReader(QWidget *parent) :
 	QMainWindow(parent), hasExecuted(false), isLoaded(false), es(ExperimentState::Idle),
-	ui(new Ui::OdroidReader), currentExp(nullptr), currentEnv(nullptr)
+	ui(new Ui::OdroidReader), currentExp(nullptr), currentEnv(nullptr), selectedExp(nullptr)
 {
 	ui->setupUi(this);
 	ui->runSelected->setMenu(new QMenu("On Client"));
+	ui->runAll->setMenu(new QMenu("On Client"));
 	ui->ip->setValidator(new IPValidator());
 	ui->sourceType->tabBar()->setStyle(new TabStyle(Qt::Horizontal));
 	ui->sensors->setColumnWidth(0,30);
@@ -57,6 +57,7 @@ OdroidReader::OdroidReader(QWidget *parent) :
 	ui->loadProgress->hide();
 
 	connect(ui->runSelected->menu(),&QMenu::triggered,this,&OdroidReader::runSelectedOnSource);
+	connect(ui->runAll->menu(),&QMenu::triggered,this,&OdroidReader::runAllOnSource);
 	connect(ui->environment,SIGNAL(clicked(QModelIndex)),this,SLOT(removeEnvironment(QModelIndex)));
     connect(ui->stopSampling,&QPushButton::clicked,[this]() {
         ui->addDevice->setEnabled(true);
@@ -77,6 +78,24 @@ OdroidReader::OdroidReader(QWidget *parent) :
         ui->stopSampling->hide();
     });
     connect(qApp,SIGNAL(aboutToQuit()),this,SLOT(aboutToQuit()));
+	connect(&envs,&Environments::addedSet, [this] (const EnvironmentSet* e) {
+		ui->availEnvs->addItem(e->name());
+	});
+
+	connect(&envs,&Environments::removingSet, [this] (const EnvironmentSet* e) {
+		if (ui->availEnvs->findText(e->name()) == -1) return;
+		ui->availEnvs->removeItem(ui->availEnvs->findText(e->name()));
+		for (QListWidgetItem *i : ui->expEnvs->findItems(e->name(),Qt::MatchCaseSensitive))
+			delete i;
+	});
+	connect(&envs,&Environments::renamingSet, [this] (QString oldName, QString newName) {
+		int oldIdx = ui->availEnvs->findText(oldName);
+		if (oldIdx == -1) return;
+		ui->availEnvs->removeItem(oldIdx);
+		ui->availEnvs->insertItem(oldIdx,newName);
+		for (QListWidgetItem *i : ui->expEnvs->findItems(oldName,Qt::MatchCaseSensitive))
+			i->setText(newName);
+	});
 
 	//Load state ...
 	QFile f("experiments.json");
@@ -85,12 +104,23 @@ OdroidReader::OdroidReader(QWidget *parent) :
 		return;
 	};
 
-	QJsonArray experimentDoc = QJsonDocument::fromJson(f.readAll()).array();
-	for (int exp = 0; exp < experimentDoc.size(); ++exp) {
-		QJsonObject experimentData = experimentDoc[exp].toObject();
-		experiments.append(new Experiment(experimentData, data));
+	QJsonObject expData = QJsonDocument::fromJson(f.readAll()).object();
+	for (const QJsonValue& v : expData["environments"].toArray())
+		envs.addEnvironment(new Environment(v.toObject()));
+	for (const QJsonValue& v : expData["sets"].toArray()) {
+		QString name = v.toObject()["name"].toString();
+		EnvironmentSet* s = envs.addSet(name);
+		for (const QJsonValue& idx : v.toObject()["items"].toArray()) {
+			s->addEnvironment(envs.environments()[idx.toInt()]);
+		}
+		ui->envSets->addItem(name);
 	}
+	for (const QJsonValue& v : expData["experiments"].toArray())
+		experiments.append(new Experiment(v.toObject(), data, envs));
 	updateExperiments();
+	ui->environment->setModel(&envs);
+	ui->environment->setItemDelegate(new EnvironmentDelegate(ui->environment));
+	ui->environment->resizeColumnsToContents();
 }
 
 OdroidReader::~OdroidReader()
@@ -178,53 +208,59 @@ void OdroidReader::on_addExperiment_clicked()
 	jo["environments"] = QJsonArray();
 	jo["cooldown_time"] = ui->cooldown->value();
 	jo["tail_time"] = ui->tail->value();
-	Experiment* exp = new Experiment(jo,data);
+	Experiment* exp = new Experiment(jo,data,envs);
 	experiments.append(exp);
-	ui->addExperiment->setEnabled(false);
 	updateExperiments();
 }
 
 void OdroidReader::on_exp_name_textChanged(const QString &arg1)
 {
-	if (arg1.isEmpty()) { ui->addExperiment->setEnabled(false); }
+//	if (arg1.isEmpty()) { ui->addExperiment->setEnabled(false); }
 	for (Experiment* e : experiments) {
 		if (e->title == arg1) {
 			ui->addExperiment->setEnabled(false);
 			return;
 		}
 	}
-	ui->addExperiment->setEnabled(true);
+//	ui->addExperiment->setEnabled(true);
 }
 
 void OdroidReader::on_listWidget_itemSelectionChanged()
 {
-	bool canModify = (ui->listWidget->selectedItems().size() != 0);
-	ui->removeExperiment->setEnabled(canModify);
-	ui->updateExperiment->setEnabled(canModify);
+	disconnect(ui->exp_name,SIGNAL(textChanged(QString)),0,0);
+	disconnect(ui->exp_prepare,SIGNAL(textChanged(QString)),0,0);
+	disconnect(ui->exp_cleanup,SIGNAL(textChanged(QString)),0,0);
+	disconnect(ui->exp_command,SIGNAL(textChanged(QString)),0,0);
+	disconnect(ui->cooldown,SIGNAL(valueChanged(int)),0,0);
+	disconnect(ui->tail,SIGNAL(valueChanged(int)),0,0);
+	bool isSelected = (ui->listWidget->selectedItems().size() != 0);
+	ui->removeExperiment->setEnabled(isSelected);
 	ui->runSelected->setEnabled(toRun.empty() && ui->runSelected->menu()->actions().size() != 0);
-	if (!canModify) return;
-	currentExp = experiments[ui->listWidget->currentRow()];
-	ui->exp_name->setText(currentExp->title);
-	ui->exp_cleanup->setText(currentExp->cleanup);
-	ui->exp_command->setText(currentExp->command);
-	ui->exp_prepare->setText(currentExp->prepare);
-	ui->cooldown->setValue(currentExp->cooldown_time);
-	ui->tail->setValue(currentExp->tail_time);
-	ui->environment->setModel(new EnvironmentModel(currentExp));
-	ui->environment->setItemDelegate(new EnvironmentDelegate(ui->environment));
-	ui->environment->resizeColumnsToContents();
+	selectedExp = nullptr;
+	if (!isSelected) return;
+	selectedExp = experiments[ui->listWidget->currentRow()];
+	ui->exp_name->setText(selectedExp->title);
+	ui->exp_prepare->setText(selectedExp->prepare);
+	ui->exp_cleanup->setText(selectedExp->cleanup);
+	ui->exp_command->setText(selectedExp->command);
+	ui->cooldown->setValue(selectedExp->cooldown_time);
+	ui->tail->setValue(selectedExp->tail_time);
+	ui->expEnvs->clear();
+	for (const EnvironmentSet* e : selectedExp->envSets)
+		ui->expEnvs->addItem(e->name());
+	connect(ui->exp_name,SIGNAL(textChanged(QString)),selectedExp,SLOT(setTitle(QString)));
+	connect(ui->exp_name,&QLineEdit::textChanged,[this](const QString &text) {ui->listWidget->selectedItems().first()->setText(text); });
+	connect(ui->exp_prepare,SIGNAL(textChanged(QString)),selectedExp,SLOT(setPrepare(QString)));
+	connect(ui->exp_cleanup,SIGNAL(textChanged(QString)),selectedExp,SLOT(setCleanup(QString)));
+	connect(ui->exp_command,SIGNAL(textChanged(QString)),selectedExp,SLOT(setCommand(QString)));
+	connect(ui->cooldown,SIGNAL(valueChanged(int)),selectedExp,SLOT(setCooldownTime(int)));
+	connect(ui->tail,SIGNAL(valueChanged(int)),selectedExp,SLOT(setTailTime(int)));
 }
 
 void OdroidReader::on_removeExperiment_clicked()
 {
 	experiments.remove(ui->listWidget->currentRow());
 	updateExperiments();
-}
-
-void OdroidReader::on_updateExperiment_clicked()
-{
-	on_removeExperiment_clicked();
-	on_addExperiment_clicked();
 }
 
 void OdroidReader::runExperiments(DataSource& source, double time = 0) {
@@ -235,21 +271,37 @@ void OdroidReader::runExperiments(DataSource& source, double time = 0) {
 			source.execute(toRun.back()->prepareMeasurement());
 			break;
 		case ExperimentState::Prepare:
-			source.setupEnvironment(toRun.back()->environments.at(lastEnv));
+			if (toRun.back()->envSets.size() <= lastSet) {
+				qDebug() << "No sets selected!";
+				disconnect(&source,SIGNAL(commandFinished(DataSource&,double)),0,0);
+				return;
+			}
+			if (toRun.back()->envSets.at(lastSet)->environments().size() <= lastEnv) {
+				qDebug() << "No envs in selected set!";
+				disconnect(&source,SIGNAL(commandFinished(DataSource&,double)),0,0);
+				return;
+			}
+			source.setupEnvironment(toRun.back()->envSets.at(lastSet)->environments().at(lastEnv));
 			es = ExperimentState::Execute;
 			qDebug() << "Start @" << time;
-			source.execute(toRun.back()->startMeasurement(time,lastEnv));
+			source.execute(toRun.back()->startMeasurement(time,toRun.back()->envSets.at(lastSet)->environments().at(lastEnv)));
 			break;
 		case ExperimentState::Execute:
 			es = ExperimentState::Cleanup;
 			qDebug() << "Stop @" << time;
-			source.execute(toRun.back()->cleanupMeasurement(time));
+			source.execute(toRun.back()->cleanupMeasurement(time,toRun.back()->envSets.at(lastSet)->environments().at(lastEnv)));
 			break;
 		case ExperimentState::Cleanup:
 			toRun.back()->finishedCleanup(time);
 			if (++repetition == ui->repetitions->value()) {
-				if (++lastEnv == toRun.back()->environments.size()) {
-					toRun.pop_back();
+				if (++lastEnv == toRun.back()->envSets.at(lastSet)->environments().size()) {
+					if (++lastSet == toRun.back()->envSets.size()) {
+						toRun.pop_back();
+						lastEnv = 0;
+						lastSet = 0;
+					} else {
+						lastEnv = 0;
+					}
 				}
 				repetition = 0;
 			}
@@ -278,6 +330,23 @@ void OdroidReader::runExperiments(DataSource& source, double time = 0) {
 	}
 }
 
+void OdroidReader::runAllOnSource(const QAction *act)
+{
+	DataSource* ds = act->property("Source").value<DataSource*>();
+	assert(ds->canExecute() && toRun.empty());
+	for (int i = 0; i < ui->listWidget->count(); i++) {
+		if (ui->listWidget->item(i)->checkState() != Qt::Checked) continue;
+		toRun.push_back(experiments[i]);
+	}
+	es = ExperimentState::Idle;
+	ui->experiments->setEnabled(false);
+	repetition = 0;
+	lastEnv = 0;
+	lastSet = 0;
+	connect(ds,SIGNAL(commandFinished(DataSource&,double)),this,SLOT(runExperiments(DataSource&,double)));
+	runExperiments(*ds);
+}
+
 void OdroidReader::runSelectedOnSource(const QAction *act)
 {
 	DataSource* ds = act->property("Source").value<DataSource*>();
@@ -287,6 +356,7 @@ void OdroidReader::runSelectedOnSource(const QAction *act)
 	ui->experiments->setEnabled(false);
 	repetition = 0;
 	lastEnv = 0;
+	lastSet = 0;
 	connect(ds,SIGNAL(commandFinished(DataSource&,double)),this,SLOT(runExperiments(DataSource&,double)));
 	runExperiments(*ds);
 }
@@ -299,23 +369,13 @@ void OdroidReader::aboutToQuit()
 	if (!f.open(QFile::WriteOnly)) {
 		qWarning() << "Could not save experiments!";
 	};
-	QFile res("Results_"+QDateTime::currentDateTime().toString()+".json.z");
-	QJsonObject testRun;
-	if (hasExecuted) {
-		if (!res.open(QFile::WriteOnly)) {
-			qWarning() << "Could not save runs :(!";
-		}
-		//TODO: Only when started!
-		QJsonArray datas;
-		for (DataSeries *ds : data) {
-			QJsonObject series;
-			series["descriptor"] = ds->descriptor->json();
-			series["data"] = ds->json();
-			datas.push_back(series);
-		}
-		testRun["dataseries"] = datas;
+	QJsonArray environmentArray;
+	for (const Environment* env : envs.environments()) {
+		QJsonObject e;
+		env->write(e);
+		environmentArray.append(e);
 	}
-	QJsonArray experimentArray, runArray;
+	QJsonArray experimentArray, runArray, setArray;
 	for (Experiment* e : experiments) {
 		QJsonObject experimentData,experimentRun;
 		e->write(experimentData);
@@ -323,16 +383,45 @@ void OdroidReader::aboutToQuit()
 		runArray.append(experimentRun);
 		experimentArray.append(experimentData);
 	}
+	for (const EnvironmentSet* s : envs.sets()) {
+		QJsonObject set;
+		set["name"] = s->name();
+		QJsonArray items;
+		for (const Environment* e : s->environments()) {
+			items.push_back(envs.index(e));
+		}
+		set["items"] = items;
+		setArray.push_back(set);
+	}
 	if (hasExecuted) {
+		QFile res("Results_"+QDateTime::currentDateTime().toString()+".json.z");
+		QJsonObject testRun;
+		if (!res.open(QFile::WriteOnly)) {
+			qWarning() << "Could not save runs :(!";
+		}
+		QJsonArray datas;
+		//TODO: need to rework to new data model!
+		for (DataSeries *ds : data) {
+			QJsonObject series;
+			series["descriptor"] = ds->descriptor->json();
+			series["data"] = ds->json();
+			datas.push_back(series);
+		}
+		testRun["dataseries"] = datas;
 		testRun["experimentRuns"] = runArray;
 		res.write(qCompress(QJsonDocument(testRun).toJson()));
 	}
-	f.write(QJsonDocument(experimentArray).toJson());
+	QJsonObject expData;
+	expData["environments"] = environmentArray;
+	expData["experiments"] = experimentArray;
+	expData["sets"] = setArray;
+	f.write(QJsonDocument(expData).toJson());
 }
 
 void OdroidReader::on_envAdd_clicked()
 {
 	QAbstractItemModel *em = ui->environment->model();
+	qDebug() << em;
 	if (em) em->insertRow(em->rowCount());
 }
 
@@ -348,12 +437,8 @@ void OdroidReader::on_pushButton_clicked()
 		DataExplorer* de = new DataExplorer(ui->scrollAreaWidgetContents);
 		de->setExperiment(ui->expSelect->currentData().value<const Experiment*>());
 		ui->scrollAreaWidgetContents->layout()->addWidget(de);
-		connect(de,SIGNAL(removeMe(DataExplorer*)),this,SLOT(removeDataExplorer(DataExplorer*)));
+		connect(de,&DataExplorer::removeMe,[de]() { de->deleteLater(); });
 	}
-}
-
-void OdroidReader::removeDataExplorer(DataExplorer *de) {
-	ui->scrollAreaWidgetContents->layout()->removeWidget(de);
 }
 
 void OdroidReader::on_addConnection_clicked()
@@ -419,10 +504,13 @@ void OdroidReader::on_addDevice_clicked()
 
 void OdroidReader::updateRunnables() {
     ui->runSelected->menu()->clear();
+	ui->runAll->menu()->clear();
     for (DataSource* ds : sources) {
         if (ds->canExecute()) {
             QAction* a = ui->runSelected->menu()->addAction(ds->descriptor());
             a->setProperty("Source",QVariant::fromValue(ds));
+			a = ui->runAll->menu()->addAction(ds->descriptor());
+			a->setProperty("Source",QVariant::fromValue(ds));
         }
     }
 }
@@ -451,7 +539,7 @@ void OdroidReader::on_loadData_clicked()
 	QJsonArray ea = experimentObject["experimentRuns"].toArray();
 	for (int exp = 0; exp < ea.size(); ++exp) {
 		QJsonObject experimentData = ea[exp].toObject();
-		experiments.append(new Experiment(experimentData, data));
+		experiments.append(new Experiment(experimentData, data, envs));
 	}
 	QJsonArray da = experimentObject["dataseries"].toArray();
 	ui->loadProgress->setValue(0);
@@ -473,4 +561,96 @@ void OdroidReader::on_loadData_clicked()
 			ui->expSelect->addItem(e->title,QVariant::fromValue(e));
 	ui->loadProgress->hide();
 	updateExperiments();
+}
+
+void OdroidReader::on_envSetAdd_clicked()
+{
+	QString title = ui->setTitle->text();
+	if (envs.findSet(title)) {
+		int i = 1;
+		while (envs.findSet(title+QString(" (%1)").arg(i))) i++;
+		title += QString(" (%1)").arg(i);
+	}
+	EnvironmentSet* s = envs.addSet(title);
+	for (const QModelIndex& i : ui->environment->selectionModel()->selectedRows()) {
+		s->addEnvironment(envs.at(i.row()));
+	}
+	ui->envSets->addItem(title);
+}
+
+void OdroidReader::on_envSets_currentRowChanged(int currentRow)
+{
+	disconnect(ui->setTitle,SIGNAL(textChanged(QString)),0,0);
+	if (currentRow == -1) {
+		ui->envSetRemove->setEnabled(false);
+		ui->envSetUpdate->setEnabled(false);
+		return;
+	}
+	ui->envSetRemove->setEnabled(true);
+	ui->envSetUpdate->setEnabled(true);
+	QString title = ui->envSets->item(currentRow)->text();
+	ui->setTitle->setText(title);
+	connect(ui->setTitle,&QLineEdit::textChanged,[this] (const QString& t) {
+		QString old = ui->envSets->currentItem()->text();
+		if (envs.findSet(t) && t != old ) {
+			ui->setTitle->setText(old);
+			return;
+		}
+		ui->envSets->currentItem()->setText(t);
+		envs.findSet(old)->rename(t);
+	});
+	ui->environment->clearSelection();
+	for (const Environment* e : envs.findSet(title)->environments()) {
+		ui->environment->selectRow(envs.index(e));
+	}
+}
+
+void OdroidReader::on_envSetRemove_clicked()
+{
+	assert(ui->envSets->currentRow() != -1);
+	envs.removeSet(envs.findSet(ui->envSets->currentItem()->text()));
+	delete ui->envSets->currentItem();
+	ui->envSetRemove->setEnabled(false);
+	ui->envSetUpdate->setEnabled(false);
+}
+
+void OdroidReader::on_envSetUpdate_clicked()
+{
+	assert(ui->envSets->currentRow() != -1);
+	QString title = ui->envSets->currentItem()->text();
+	envs.findSet(title)->clear();
+	for (const QModelIndex& i : ui->environment->selectionModel()->selectedRows()) {
+		envs.findSet(title)->addEnvironment(envs.at(i.row()));
+	}
+}
+
+void OdroidReader::on_addEnvironment_clicked()
+{
+	qDebug() << "Exp::" << selectedExp;
+	QString set = ui->availEnvs->currentText();
+	if (selectedExp == nullptr) {
+		qDebug() << "No experiment selected!";
+		return;
+	}
+	qDebug() << "Exp::" << selectedExp;
+	if (!ui->expEnvs->findItems(set,Qt::MatchCaseSensitive).empty()) {
+		qDebug() << "Already added!";
+		return;
+	}
+	ui->expEnvs->addItem(set);
+	selectedExp->envSets.append(envs.findSet(set));
+}
+
+void OdroidReader::on_pushButton_2_clicked()
+{
+	if (ui->expEnvs->selectedItems().size() != 1) {
+		qDebug() << "Nothing was selected!";
+		return;
+	}
+	if (selectedExp == nullptr) {
+		qDebug() << "No experiment selected!";
+		return;
+	}
+	selectedExp->envSets.removeAll(envs.findSet(ui->expEnvs->selectedItems().first()->text()));
+	delete ui->expEnvs->selectedItems().first();
 }

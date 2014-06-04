@@ -1,6 +1,6 @@
 #include "dataexplorer.h"
 #include "ui_dataexplorer.h"
-
+#include "environment.h"
 static QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254),QColor(91,53,40),QColor(133,196,77),
 					  QColor(104,115,15),QColor(133,3,43),QColor(188,186,111),QColor(168,115,19),QColor(63,184,67)});
 
@@ -33,7 +33,7 @@ void DataExplorer::updateDetails() {
 		for (QCPAbstractPlottable *p : ui->selectEnvironment->selectedPlottables()) {
 			int unitid = p->property("UID").toInt();
 			int envid = p->property("EID").toInt();
-			DataSeries v = exp->environments.at(envid).run(unitid,ui->runNo->value(),*exp);
+			DataSeries v = exp->runs.keys().at(envid)->run(unitid,ui->runNo->value(),exp);
 			QCPGraph *g = ui->runPlot->addGraph();
 			g->setPen(origcols[colid++%origcols.size()]);
 			g->setData(v.getTimestamps(),v.getValues());
@@ -43,11 +43,11 @@ void DataExplorer::updateDetails() {
 		for (QCPAbstractPlottable *p : ui->selectEnvironment->selectedPlottables()) {
 			int unitid = p->property("UID").toInt();
 			int envid = p->property("EID").toInt();
-			StatisticalSet vals = exp->environments.at(envid).integral(unitid,*exp);
+			StatisticalSet vals = exp->runs.keys().at(envid)->integral(unitid,exp);
 			QCPStatisticalBox* b = new QCPStatisticalBox(ui->runPlot->xAxis,ui->runPlot->yAxis);
 			b->setData(colid,vals.min(),vals.quantile(0.25),vals.median(),vals.quantile(0.75),vals.max());
 			ui->runPlot->addPlottable(b);
-			labels.append(QString("%1 @ %2").arg(exp->data.at(unitid)->descriptor->name(),exp->environments.at(envid).label));
+			labels.append(QString("%1 @ %2").arg(exp->data.at(unitid)->descriptor->name(),exp->runs.keys().at(envid)->label));
 			ticks.append(colid++);
 			ui->runPlot->xAxis->setAutoTicks(false);
 			ui->runPlot->xAxis->setAutoTickLabels(false);
@@ -74,14 +74,14 @@ void DataExplorer::updateEnvironment() {
 	for (QCPAbstractPlottable *p : ui->selectMetric->selectedPlottables()) {
 		int unit = p->property("UID").toInt();
         int eid = 0;
-		for (const Experiment::Environment& e : exp->environments) {
-			StatisticalSet vals = e.aggregate(unit,*exp);
+		for (const Environment* e : exp->runs.keys()) {
+			StatisticalSet vals = e->aggregate(unit,exp);
 			QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectEnvironment->xAxis,ui->selectEnvironment->yAxis);
 			b->setData(idx,vals.min(),vals.quantile(0.25),vals.median(),vals.quantile(0.75),vals.max());
             b->setProperty("UID",unit);
             b->setProperty("EID",eid++);
 			ui->selectEnvironment->addPlottable(b);
-			labels.append(QString("%1 @ %2").arg(exp->data.at(unit)->descriptor->name(),e.label));
+			labels.append(QString("%1 @ %2").arg(exp->data.at(unit)->descriptor->name(),e->label));
 			ticks.append(idx++);
 		}
 	}
@@ -137,7 +137,7 @@ void DataExplorer::on_dispUnit_currentIndexChanged(int)
 		if (p == nullptr) continue;
 		if (p->descriptor->unit() != ui->dispUnit->currentText()) continue;
 		++i;
-		StatisticalSet v = exp->aggregate(p->descriptor->uid(),*exp);
+		StatisticalSet v = exp->aggregate(p->descriptor->uid(),exp);
 		QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectMetric->xAxis,ui->selectMetric->yAxis);
 		b->setBrush(boxBrush);
 		b->setProperty("UID",p->descriptor->uid());
@@ -165,7 +165,7 @@ void DataExplorer::on_dispUnit_currentIndexChanged(int)
 
 void DataExplorer::setExperiment(const Experiment *exp) {
 	this->exp = exp;
-	ui->runNo->setMaximum(exp->environments.first().runs.size()-1);
+	ui->runNo->setMaximum(exp->runs.first().size()-1);
 	if (exp != nullptr) {
 		on_runNo_valueChanged(0);
 

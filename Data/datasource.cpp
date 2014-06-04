@@ -11,7 +11,7 @@ void DataSource::execute(QString) {
 	return;
 }
 
-void DataSource::setupEnvironment(const Experiment::Environment &) {
+void DataSource::setupEnvironment(const Environment *) {
 	return;
 }
 
