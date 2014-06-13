@@ -157,7 +157,7 @@ void NetworkSource::execute(QString exec) {
 		return;
 	}
 	qDebug() << "Executing: " << exec;
-	assert(started == false); //TODO! This implies single instances
+	//assert(started == false); //TODO! This implies single instances
 	socket.write("EXEC\n");
 	socket.write(exec.append("\n").toStdString().c_str());
 }

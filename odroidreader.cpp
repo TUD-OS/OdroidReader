@@ -31,6 +31,9 @@ OdroidReader::OdroidReader(QWidget *parent) :
 {
 	ui->setupUi(this);
 	ui->runSelected->setMenu(new QMenu("On Client"));
+	ui->totalProgress->hide();
+	ui->experimentProgress->hide();
+	ui->environmentProgress->hide();
 	ui->runAll->setMenu(new QMenu("On Client"));
 	ui->ip->setValidator(new IPValidator());
 	ui->sourceType->tabBar()->setStyle(new TabStyle(Qt::Horizontal));
@@ -39,20 +42,20 @@ OdroidReader::OdroidReader(QWidget *parent) :
 	DeviceMonitor *dm = new SmartPowerMonitor();
 	devMonitors.append(dm);
 	dm->monitor(1000);
-    connect(dm,&DeviceMonitor::addSource,[this] (DataSource* src) {
-        ui->foundDevices->addItem(src->descriptor(),QVariant::fromValue(src));
-    });
-    connect(dm,&DeviceMonitor::removeSource, [this] (DataSource* src) {
-        if (sources.contains(src)) {
-            qDebug() << "Removing Source!";
-            if (src->isRunning()) src->start(); //Terminate if running
-            sources.remove(sources.indexOf(src));
-            delete src->property("Item").value<QListWidgetItem*>();
-        }
-        //TODO remove from sources if it has been added!
-       qDebug() << "Removed Source!";
-       ui->foundDevices->removeItem(ui->foundDevices->findData(QVariant::fromValue(src)));
-    });
+	connect(dm,&DeviceMonitor::addSource,[this] (DataSource* src) {
+		ui->foundDevices->addItem(src->descriptor(),QVariant::fromValue(src));
+	});
+	connect(dm,&DeviceMonitor::removeSource, [this] (DataSource* src) {
+		if (sources.contains(src)) {
+			qDebug() << "Removing Source!";
+			if (src->isRunning()) src->start(); //Terminate if running
+			sources.remove(sources.indexOf(src));
+			delete src->property("Item").value<QListWidgetItem*>();
+		}
+		//TODO remove from sources if it has been added!
+	   qDebug() << "Removed Source!";
+	   ui->foundDevices->removeItem(ui->foundDevices->findData(QVariant::fromValue(src)));
+	});
     ui->stopSampling->hide();
 	ui->loadProgress->hide();
 
@@ -62,21 +65,26 @@ OdroidReader::OdroidReader(QWidget *parent) :
     connect(ui->stopSampling,&QPushButton::clicked,[this]() {
         ui->addDevice->setEnabled(true);
         ui->addConnection->setEnabled(true);
-    });
+	});
     connect(ui->startSampling,&QPushButton::clicked,[this]() {
 		hasExecuted = true;
         ui->addDevice->setEnabled(false);
         ui->addConnection->setEnabled(false);
-    });
+	});
     connect(ui->startSampling,&QPushButton::clicked,[this] () {
         ui->startSampling->hide();
         ui->stopSampling->show();
-    });
+		ui->repetitions->setEnabled(true);
+	});
     connect(ui->stopSampling,&QPushButton::clicked,[this] () {
         for (DataSource* src : sources) src->stop();
         ui->startSampling->show();
         ui->stopSampling->hide();
-    });
+		ui->totalProgress->hide();
+		ui->experimentProgress->hide();
+		ui->environmentProgress->hide();
+		ui->repetitions->setDisabled(true);
+	});
     connect(qApp,SIGNAL(aboutToQuit()),this,SLOT(aboutToQuit()));
 	connect(&envs,&Environments::addedSet, [this] (const EnvironmentSet* e) {
 		ui->availEnvs->addItem(e->name());
@@ -127,6 +135,7 @@ OdroidReader::~OdroidReader()
 {
 	delete ui;
 	for (auto d : data) delete d;
+	for (auto d : devMonitors) delete d;
 }
 
 void OdroidReader::updateCurve(int row, int col) {
@@ -204,7 +213,7 @@ void OdroidReader::on_addExperiment_clicked()
 	jo["title"] = ui->exp_name->text();
 	jo["prepare"] = ui->exp_prepare->text();
 	jo["cleanup"] = ui->exp_cleanup->text();
-	jo["command"] = ui->exp_cleanup->text();
+	jo["command"] = ui->exp_command->text();
 	jo["environments"] = QJsonArray();
 	jo["cooldown_time"] = ui->cooldown->value();
 	jo["tail_time"] = ui->tail->value();
@@ -234,10 +243,10 @@ void OdroidReader::on_listWidget_itemSelectionChanged()
 	disconnect(ui->cooldown,SIGNAL(valueChanged(int)),0,0);
 	disconnect(ui->tail,SIGNAL(valueChanged(int)),0,0);
 	bool isSelected = (ui->listWidget->selectedItems().size() != 0);
-	ui->removeExperiment->setEnabled(isSelected);
-	ui->runSelected->setEnabled(toRun.empty() && ui->runSelected->menu()->actions().size() != 0);
 	selectedExp = nullptr;
-	if (!isSelected) return;
+	if (!isSelected || ui->listWidget->currentRow() == -1) return;
+	ui->runSelected->setEnabled(toRun.empty() && ui->runSelected->menu()->actions().size() != 0);
+	ui->removeExperiment->setEnabled(isSelected);
 	selectedExp = experiments[ui->listWidget->currentRow()];
 	ui->exp_name->setText(selectedExp->title);
 	ui->exp_prepare->setText(selectedExp->prepare);
@@ -288,23 +297,49 @@ void OdroidReader::runExperiments(DataSource& source, double time = 0) {
 			break;
 		case ExperimentState::Execute:
 			es = ExperimentState::Cleanup;
-			qDebug() << "Stop @" << time;
-			source.execute(toRun.back()->cleanupMeasurement(time,toRun.back()->envSets.at(lastSet)->environments().at(lastEnv)));
+			{
+				QTimer* tmr = new QTimer();
+				tmr->setSingleShot(true);
+				connect(tmr,&QTimer::timeout,[&source,this,tmr,time] () {
+					source.execute(toRun.back()->cleanupMeasurement(time+toRun.back()->cooldown_time));
+					tmr->deleteLater();
+				});
+				tmr->start(toRun.back()->cooldown_time*1000);
+			}
+			if (toRun.back()->cooldown_time != 0)
+				qDebug() << "Stop @" << time << "+" << (toRun.back()->cooldown_time);
+			else
+				qDebug() << "Stop @" << time;
 			break;
 		case ExperimentState::Cleanup:
 			toRun.back()->finishedCleanup(time);
+			ui->environmentProgress->setValue(ui->environmentProgress->value()+1);
+			ui->experimentProgress->setValue(ui->experimentProgress->value()+1);
+			ui->totalProgress->setValue(ui->totalProgress->value()+1);
 			if (++repetition == ui->repetitions->value()) {
 				if (++lastEnv == toRun.back()->envSets.at(lastSet)->environments().size()) {
 					if (++lastSet == toRun.back()->envSets.size()) {
+						qDebug() << "Poping last of " << toRun.size();
 						toRun.pop_back();
+						if (toRun.size() > 0) {
+							ui->experimentProgress->setMaximum(toRun.back()->executions()*ui->repetitions->value());
+							ui->experimentProgress->setValue(0);
+							ui->experimentProgress->setFormat(QString("Experiment: %1 (Environment: %v/%m)").arg(toRun.back()->title));
+						}
 						lastEnv = 0;
 						lastSet = 0;
 					} else {
 						lastEnv = 0;
 					}
 				}
+				ui->environmentProgress->setValue(0);
+				ui->environmentProgress->setMaximum(ui->repetitions->value());
+				if (toRun.size() > 0) {
+					ui->environmentProgress->setFormat(QString("Environment: %1 (Run: %v/%m)").arg(toRun.back()->envSets.at(lastSet)->environments().at(lastEnv)->label));
+				}
 				repetition = 0;
 			}
+			ui->environmentProgress->setValue(repetition);
 			es = ExperimentState::Idle;
 			if (!toRun.empty()) {
 				qDebug() << "Tailtime: " << toRun.back()->tail_time;
@@ -320,6 +355,7 @@ void OdroidReader::runExperiments(DataSource& source, double time = 0) {
 					runExperiments(source,time);
 				}
 			} else {
+				qDebug() << "DONE!";
 				ui->expSelect->clear();
 				for (const Experiment* e : experiments)
 					if (e->hasData())
@@ -334,16 +370,33 @@ void OdroidReader::runAllOnSource(const QAction *act)
 {
 	DataSource* ds = act->property("Source").value<DataSource*>();
 	assert(ds->canExecute() && toRun.empty());
+	int runs = 0;
 	for (int i = 0; i < ui->listWidget->count(); i++) {
 		if (ui->listWidget->item(i)->checkState() != Qt::Checked) continue;
 		toRun.push_back(experiments[i]);
+		runs += experiments[i]->executions();
 	}
-	es = ExperimentState::Idle;
-	ui->experiments->setEnabled(false);
+	runs *= ui->repetitions->value();
 	repetition = 0;
 	lastEnv = 0;
 	lastSet = 0;
+	if (toRun.size() != 0) {
+		//ui->experimentProgress->setFormat(QString("Experiment: %1 (Environment: %v/%m)").arg(toRun.back()->title));
+		ui->experimentProgress->setMaximum(toRun.back()->executions()*ui->repetitions->value());
+		ui->experimentProgress->setValue(0);
+		ui->environmentProgress->setFormat(QString("Environment: %1 (Run: %v/%m)").arg(toRun.back()->envSets.at(lastSet)->environments().at(lastEnv)->label));
+		ui->environmentProgress->setMaximum(ui->repetitions->value());
+		ui->environmentProgress->setValue(0);
+//		ui->totalProgress->setFormat("Total: %p% (Experiment: %v/%m)");
+		ui->totalProgress->setMaximum(runs);
+		ui->totalProgress->setValue(0);
+	}
+	es = ExperimentState::Idle;
+	ui->experiments->setEnabled(false);
 	connect(ds,SIGNAL(commandFinished(DataSource&,double)),this,SLOT(runExperiments(DataSource&,double)));
+	ui->totalProgress->show();
+	ui->experimentProgress->show();
+	ui->environmentProgress->show();
 	runExperiments(*ds);
 }
 
@@ -352,12 +405,25 @@ void OdroidReader::runSelectedOnSource(const QAction *act)
 	DataSource* ds = act->property("Source").value<DataSource*>();
 	assert(ds->canExecute() && toRun.empty());
 	toRun.push_back(experiments[ui->listWidget->currentRow()]);
+	unsigned runs = toRun.back()->executions()*ui->repetitions->value();
+	ui->experimentProgress->setMaximum(runs);
+	ui->experimentProgress->setValue(0);
+	ui->environmentProgress->setMaximum(ui->repetitions->value());
+	ui->environmentProgress->setValue(0);
+	ui->totalProgress->setMaximum(runs);
+	ui->totalProgress->setValue(0);
 	es = ExperimentState::Idle;
 	ui->experiments->setEnabled(false);
 	repetition = 0;
 	lastEnv = 0;
 	lastSet = 0;
+	ui->environmentProgress->setFormat(QString("Environment: %1 (Run: %v/%m)").arg(toRun.back()->envSets.at(lastSet)->environments().at(lastEnv)->label));
+//	ui->experimentProgress->setFormat(QString("Experiment: %1 (Environment: %v/%m)").arg(toRun.back()->title));
+//	ui->totalProgress->setFormat("Total: %p% (Experiment: %v/%m)");
 	connect(ds,SIGNAL(commandFinished(DataSource&,double)),this,SLOT(runExperiments(DataSource&,double)));
+	ui->totalProgress->show();
+	ui->experimentProgress->show();
+	ui->environmentProgress->show();
 	runExperiments(*ds);
 }
 
@@ -441,25 +507,6 @@ void OdroidReader::on_pushButton_clicked()
 	}
 }
 
-void OdroidReader::on_addConnection_clicked()
-{
-	NetworkSource *ns = new NetworkSource(ui->sourceName->text(),ui->ip->text(),ui->port->value(),ui->samplingInterval->value());
-	connect(ui->startSampling,SIGNAL(clicked()),ns,SLOT(start()));
-	connect(ns,SIGNAL(descriptorsAvailable(QVector<const DataDescriptor*>)),this,SLOT(addDescriptors(QVector<const DataDescriptor*>)));
-	connect(ns,SIGNAL(dataAvailable(const DataDescriptor*,double,double)),this,SLOT(addData(const DataDescriptor*,double,double)));
-	sources.append(ns);
-	QListWidgetItem* lwi = new QListWidgetItem(QIcon::fromTheme("network-disconnect"),ns->descriptor());
-    ns->setProperty("Item",QVariant::fromValue(lwi));
-    ui->sourceList->addItem(lwi);
-	connect(ns,&NetworkSource::connected, [lwi,this]() {
-		lwi->setIcon(QIcon::fromTheme("network-connect"));
-	});
-	connect(ns,&NetworkSource::disconnected, [lwi,this]() {
-		lwi->setIcon(QIcon::fromTheme("network-disconnect"));
-	});
-    updateRunnables();
-}
-
 void OdroidReader::addData(const DataDescriptor *desc, double value, double time) {
 	assert(data.size() > static_cast<signed int>(desc->uid()));
 	data.at(desc->uid())->addValue(time,value);
@@ -477,9 +524,29 @@ void OdroidReader::addDescriptors(QVector<const DataDescriptor *> descs) {
 	updateSensors();
 }
 
+void OdroidReader::on_addConnection_clicked()
+{
+	NetworkSource *ns = new NetworkSource(ui->sourceName->text(),ui->ip->text(),ui->port->value(),ui->samplingInterval->value());
+	connect(ui->startSampling,SIGNAL(clicked()),ns,SLOT(start()));
+	connect(ns,SIGNAL(descriptorsAvailable(QVector<const DataDescriptor*>)),this,SLOT(addDescriptors(QVector<const DataDescriptor*>)));
+	connect(ns,SIGNAL(dataAvailable(const DataDescriptor*,double,double)),this,SLOT(addData(const DataDescriptor*,double,double)));
+	sources.append(ns);
+	QListWidgetItem* lwi = new QListWidgetItem(QIcon::fromTheme("network-disconnect"),ns->descriptor());
+	ns->setProperty("Item",QVariant::fromValue(lwi));
+	ui->sourceList->addItem(lwi);
+	connect(ns,&NetworkSource::connected, [lwi,this]() {
+		lwi->setIcon(QIcon::fromTheme("network-connect"));
+	});
+	connect(ns,&NetworkSource::disconnected, [lwi,this]() {
+		lwi->setIcon(QIcon::fromTheme("network-disconnect"));
+	});
+	updateRunnables();
+}
+
 void OdroidReader::on_addDevice_clicked()
 {
     DataSource* src = ui->foundDevices->currentData().value<DataSource*>();
+	((OdroidSmartPowerSource*)src)->setInterval(ui->deviceSI->value());
     for (DataSource *s: sources) {
         if (s->descriptor() == src->descriptor()) {
             qDebug() << "Can only be added once!";
@@ -626,13 +693,11 @@ void OdroidReader::on_envSetUpdate_clicked()
 
 void OdroidReader::on_addEnvironment_clicked()
 {
-	qDebug() << "Exp::" << selectedExp;
 	QString set = ui->availEnvs->currentText();
 	if (selectedExp == nullptr) {
 		qDebug() << "No experiment selected!";
 		return;
 	}
-	qDebug() << "Exp::" << selectedExp;
 	if (!ui->expEnvs->findItems(set,Qt::MatchCaseSensitive).empty()) {
 		qDebug() << "Already added!";
 		return;

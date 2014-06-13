@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>923</width>
-    <height>854</height>
+    <height>865</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -45,7 +45,7 @@
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="sampleTab">
        <attribute name="title">
@@ -64,7 +64,7 @@
            <enum>QTabWidget::West</enum>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>1</number>
           </property>
           <widget class="QWidget" name="tab">
            <attribute name="title">
@@ -239,6 +239,52 @@
                <iconset theme="list-add">
                 <normaloff/>
                </iconset>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <layout class="QHBoxLayout" name="horizontalLayout_17">
+              <property name="leftMargin">
+               <number>10</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QSlider" name="deviceSI">
+                <property name="minimum">
+                 <number>100</number>
+                </property>
+                <property name="maximum">
+                 <number>10000</number>
+                </property>
+                <property name="singleStep">
+                 <number>10</number>
+                </property>
+                <property name="pageStep">
+                 <number>20</number>
+                </property>
+                <property name="value">
+                 <number>1000</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLCDNumber" name="deviceSIDisplay">
+                <property name="intValue" stdset="0">
+                 <number>1000</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_16">
+              <property name="text">
+               <string>Interval (ms):</string>
               </property>
              </widget>
             </item>
@@ -667,6 +713,39 @@
           </item>
          </layout>
         </item>
+        <item>
+         <widget class="QProgressBar" name="totalProgress">
+          <property name="value">
+           <number>24</number>
+          </property>
+          <property name="textVisible">
+           <bool>true</bool>
+          </property>
+          <property name="format">
+           <string>Total: %p%</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QProgressBar" name="experimentProgress">
+          <property name="value">
+           <number>24</number>
+          </property>
+          <property name="format">
+           <string>Experiment: %p%</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QProgressBar" name="environmentProgress">
+          <property name="value">
+           <number>24</number>
+          </property>
+          <property name="format">
+           <string>Environment: %p%</string>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="result">
@@ -725,8 +804,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>69</width>
-               <height>16</height>
+               <width>891</width>
+               <height>535</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_7"/>
@@ -953,6 +1032,22 @@
     <hint type="destinationlabel">
      <x>370</x>
      <y>155</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>deviceSI</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>deviceSIDisplay</receiver>
+   <slot>display(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>252</x>
+     <y>161</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>403</x>
+     <y>161</y>
     </hint>
    </hints>
   </connection>

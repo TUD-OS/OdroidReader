@@ -30,13 +30,14 @@ DataSeries::DataSeries(const DataSeries &src, double from, double to, bool timeA
 			ctr++;
 		}
 	}
-	qDebug() << "Copied " << ctr << "values [" << from << "-" << to << "] of" << src.timestamps.size();
+	//qDebug() << "Copied " << ctr << "values [" << from << "-" << to << "] of" << src.timestamps.size();
 }
 
 //TODO: requires values to be added in time order
 void DataSeries::addValue(double time, double value, bool scale) {
-//	if (timestamps.size() > 0) qDebug() << time << "vs." << timestamps.last();
-	assert(timestamps.size() == 0 || time >= timestamps.last()); //If this is not true we have to recalculate avg :(
+	if (timestamps.size() > 0 && time < timestamps.last())  {//qDebug() << time << "vs." << timestamps.last();
+		qWarning() << time << timestamps.last();
+	}
 	if (scale) value *= descriptor->factor();
 	//qDebug() << descriptor->str() << ": Adding " << value << "at time" << time;
 	if (value < _min) {

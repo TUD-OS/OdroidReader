@@ -47,7 +47,7 @@ StatisticalSet Environment::integral(int unit, const Experiment* e) const {
 
 StatisticalSet Environment::aggregate(int unit, const Experiment* e) const {
 	StatisticalSet s(e->data.at(unit)->descriptor);
-	qDebug() << "Aggregating environment over" << e->runs[this].size() << "runs";
+	//qDebug() << "Aggregating environment over" << e->runs[this].size() << "runs";
 	for (int i = 0; i < e->runs[this].size(); i++) {
 		s.addValue(run(unit,i,e).getAvg());
 	}
@@ -55,7 +55,7 @@ StatisticalSet Environment::aggregate(int unit, const Experiment* e) const {
 }
 
 DataSeries Environment::run(int unit, int run, const Experiment* e) const {
-	qDebug() << "Extracting Dataseries ...";
+	//qDebug() << "Extracting Dataseries ...";
 	const QPair<double,double> &r = e->runs[this].at(run);
 	return DataSeries(*e->data.at(unit),r.first,r.second);
 }

@@ -84,13 +84,14 @@ QString Experiment::prepareMeasurement() {
 }
 
 QString Experiment::startMeasurement(double time,const Environment* env) {
-	runs[env].push_back(QPair<double,double>(time,time));
+	lastEnvironment = env;
+	runs[lastEnvironment].push_back(QPair<double,double>(time,time));
 	qDebug() << "Returning command " << command;
 	return command;
 }
 
-QString Experiment::cleanupMeasurement(float time, const Environment *env) {
-	runs[env].back().second = time;
+QString Experiment::cleanupMeasurement(float time) {
+	runs[lastEnvironment].back().second = time;
 	wasRun = true;
 	return cleanup;
 }
@@ -99,11 +100,17 @@ bool Experiment::hasData() const { return wasRun; }
 void Experiment::finishedCleanup(float) {}
 
 StatisticalSet Experiment::aggregate(int unit, const Experiment* e) const {
-	qDebug() << "Aggregating Experiment " << e->title << "Unit: " << unit;
+	//qDebug() << "Aggregating Experiment " << e->title << "Unit: " << unit;
 	StatisticalSet s(e->data.at(unit)->descriptor);
 	for (const Environment* env : runs.keys()) {
-		qDebug() << "Extending Set" << env->description();
+		//qDebug() << "Extending Set" << env->description();
 		s.extend(env->aggregate(unit,e));
 	}
 	return s;
+}
+
+unsigned Experiment::executions() const {
+	unsigned i = 0;
+	for (EnvironmentSet* s : envSets) i += s->environments().size();
+	return i;
 }

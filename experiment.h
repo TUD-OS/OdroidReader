@@ -19,10 +19,10 @@ Q_OBJECT
 private:
 	int currentRun;
 	bool wasRun;
+	const Environment* lastEnvironment;
 public:
 	const QVector<DataSeries*> &data;
 
-public:
 	QString title, prepare, cleanup, command;
 	quint32 tail_time, cooldown_time;
 	Experiment(const QJsonObject &jo, const QVector<DataSeries*>& data, const Environments &envs);
@@ -33,12 +33,13 @@ public:
 	QList<EnvironmentSet*> envSets;
 	QMap<const Environment*,QVector<QPair<double,double>>> runs;
 	QString prepareMeasurement();
-	QString cleanupMeasurement(float time, const Environment* env);
+	QString cleanupMeasurement(float time);
 	QString startMeasurement(double time, const Environment* env);
 	void finishedCleanup(float time);
 	StatisticalSet aggregate(int unit, const Environment* e) const;
 	StatisticalSet integral(int unit, const Environment* e) const;
 	DataSeries run(int unit, int run, const Environment* e) const;
+	unsigned executions() const;
 
 public slots:
 	inline void setTitle(const QString& v) { title = v; }

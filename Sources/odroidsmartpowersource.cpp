@@ -16,7 +16,7 @@ void hexDump(const QByteArray &ba) {
 }
 
 OdroidSmartPowerSource::OdroidSmartPowerSource(QString path) :
-    DataSource("Odroid"), QHIDevice(path), lastCmd(Command::NONE), _running(false), restarted(false), _path(path)
+	DataSource("Odroid"), QHIDevice(path), lastCmd(Command::NONE), _interval(1000), _running(false), restarted(false), _path(path)
 {
 	static_cast<QHIDevice*>(this)->connect(&getDataTmr,&QTimer::timeout,[this] () {
 		sendCommand(Command::REQUEST_DATA);
@@ -60,7 +60,7 @@ OdroidSmartPowerSource::OdroidSmartPowerSource(QString path) :
 		  case Command::REQUEST_ONOFF:
 		  case Command::REQUEST_STARTSTOP:
 		  case Command::REQUEST_STATUS:
-				getDataTmr.start(1000);
+				getDataTmr.start(_interval);
 				break;
 		}
 		emit connected();
