@@ -26,13 +26,15 @@ void SmartPowerMonitor::checkDevices() {
 			if (s->path() == info.path) {
                 assert(toDelete.contains(s));
                 toDelete.removeAll(s);
-                assert(!toDelete.contains(s));
+				assert(!toDelete.contains(s));
                 newEntry = false;
                 break;
             }
         }
         if (newEntry) {
-			sources.append(new OdroidSmartPowerSource(info.path.toStdString().c_str()));
+			OdroidSmartPowerSource* sps = new OdroidSmartPowerSource(info.path.toStdString().c_str());
+			if (!sps->good()) continue;
+			sources.append(sps);
             emit addSource(sources.last());
 			qDebug() << "Serial      : " << info.serial_number;
 			qDebug() << "Manufacturer: " << info.manufacturer_string;
