@@ -29,6 +29,7 @@ public slots:
 	void on_dispUnit_currentIndexChanged(int);
 	void updateEnvironment();
     void updateDetails();
+	void pointInfo(QMouseEvent* event);
 private slots:
 	void on_detailType_currentIndexChanged(int index);
 	void on_pushButton_clicked();

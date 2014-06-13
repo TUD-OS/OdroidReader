@@ -1,6 +1,7 @@
 #include "dataexplorer.h"
 #include "ui_dataexplorer.h"
 #include "environment.h"
+#include <QToolTip>
 static QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254),QColor(91,53,40),QColor(133,196,77),
 					  QColor(104,115,15),QColor(133,3,43),QColor(188,186,111),QColor(168,115,19),QColor(63,184,67)});
 
@@ -13,6 +14,7 @@ DataExplorer::DataExplorer(QWidget *parent) :
 	ui->selectMetric->setSelectionTolerance(5);
 	ui->selectEnvironment->setSelectionTolerance(5);
 	ui->runPlot->setSelectionTolerance(5);
+	connect(ui->runPlot,&QCustomPlot::mouseMove,this,&DataExplorer::pointInfo);
 }
 
 DataExplorer::~DataExplorer()
@@ -35,6 +37,8 @@ void DataExplorer::updateDetails() {
 			int envid = p->property("EID").toInt();
 			DataSeries v = exp->runs.keys().at(envid)->run(unitid,ui->runNo->value(),exp);
 			QCPGraph *g = ui->runPlot->addGraph();
+			g->setName(v.descriptor->name()+" @ "+exp->runs.keys().at(envid)->label);
+			g->setProperty("Unit",v.descriptor->unit());
 			g->setPen(origcols[colid++%origcols.size()]);
 			g->setData(v.getTimestamps(),v.getValues());
 		}
@@ -191,4 +195,39 @@ void DataExplorer::on_detailType_currentIndexChanged(int)
 void DataExplorer::on_pushButton_clicked()
 {
 	emit(removeMe(this));
+}
+
+void DataExplorer::pointInfo(QMouseEvent *event)
+{
+	QCPAbstractPlottable *plottable = ui->runPlot->plottableAt(event->localPos());
+	if (!plottable) return;
+
+	double x = ui->runPlot->xAxis->pixelToCoord(event->localPos().x());
+
+	QCPGraph *graph = qobject_cast<QCPGraph*>(plottable);
+	if (!graph) return;
+
+	double key = 0;
+	double value = 0;
+	bool ok = false;
+	double m = std::numeric_limits<double>::max();
+	for (QCPData data : graph->data()->values()) {
+		double d = qAbs(x - data.key);
+
+		if(d < m) {
+			key = data.key;
+			value = data.value;
+
+			ok = true;
+			m = d;
+		}
+	}
+	if (!ok) return;
+	QToolTip::hideText();
+	QToolTip::showText(event->globalPos(),
+		tr("<center><b>%L1</b><br/>%L2 %L3@ %L4s</center>").
+			arg(graph->name().isEmpty() ? "..." : graph->name()).
+			arg(value).arg(graph->property("unit").toString()).
+			arg(key),
+		ui->runPlot, ui->runPlot->rect());
 }

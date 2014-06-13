@@ -42,6 +42,7 @@ OdroidReader::OdroidReader(QWidget *parent) :
 	DeviceMonitor *dm = new SmartPowerMonitor();
 	devMonitors.append(dm);
 	dm->monitor(1000);
+	connect(ui->globalPlot,&QCustomPlot::mouseMove,this,&OdroidReader::plotMousePress);
 	connect(dm,&DeviceMonitor::addSource,[this] (DataSource* src) {
 		ui->foundDevices->addItem(src->descriptor(),QVariant::fromValue(src));
 	});
@@ -148,6 +149,8 @@ void OdroidReader::updateCurve(int row, int col) {
 		}
 		QColor color = origcols.takeFirst();
 		graphs[row] = ui->globalPlot->addGraph();
+		graphs[row]->setName(data.at(rowMap[row])->descriptor->name());
+		graphs[row]->setProperty("unit",data.at(rowMap[row])->descriptor->unit());
 		graphs[row]->setPen(color);
 		graphs.at(row)->setData(data.at(rowMap[row])->getTimestamps(), data.at(rowMap[row])->getValues());
 		connect(data.at(rowMap[row]),&DataSeries::newValue,[row,this](double time, double value) {
@@ -718,4 +721,39 @@ void OdroidReader::on_pushButton_2_clicked()
 	}
 	selectedExp->envSets.removeAll(envs.findSet(ui->expEnvs->selectedItems().first()->text()));
 	delete ui->expEnvs->selectedItems().first();
+}
+
+void OdroidReader::plotMousePress(QMouseEvent *event)
+{
+	QCPAbstractPlottable *plottable = ui->globalPlot->plottableAt(event->localPos());
+	if (!plottable) return;
+
+	double x = ui->globalPlot->xAxis->pixelToCoord(event->localPos().x());
+
+	QCPGraph *graph = qobject_cast<QCPGraph*>(plottable);
+	if (!graph) return;
+
+	double key = 0;
+	double value = 0;
+	bool ok = false;
+	double m = std::numeric_limits<double>::max();
+	for (QCPData data : graph->data()->values()) {
+		double d = qAbs(x - data.key);
+
+		if(d < m) {
+			key = data.key;
+			value = data.value;
+
+			ok = true;
+			m = d;
+		}
+	}
+	if (!ok) return;
+	QToolTip::hideText();
+	QToolTip::showText(event->globalPos(),
+		tr("<center><b>%L1</b><br/>%L2 %L3@ %L4s</center>").
+			arg(graph->name().isEmpty() ? "..." : graph->name()).
+			arg(value).arg(graph->property("unit").toString()).
+			arg(key),
+		ui->globalPlot, ui->globalPlot->rect());
 }

@@ -66,7 +66,7 @@ private slots:
   void on_addEnvironment_clicked();
 
   void on_pushButton_2_clicked();
-
+  void plotMousePress(QMouseEvent *event);
 private:
   void updateSensors();
   void updateExperiments();
