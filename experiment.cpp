@@ -10,32 +10,26 @@ Experiment::Experiment(const QJsonObject &jo, const QVector<DataSeries *> &descs
 	prepare = jo["prepare"].toString();
 	cleanup = jo["cleanup"].toString();
 	command = jo["command"].toString();
-	QJsonArray esets = jo["environment_sets"].toArray();
-	for (int i = 0; i < esets.size(); i++) {
-		envSets.append(envs.findSet(esets.at(i).toString()));
+
+	for (QJsonValueRef o : jo["environment_sets"].toArray()) {
+		EnvironmentSet* s = envs.findSet(o.toString());
+		if (s == nullptr) {
+			qWarning() << "Unknown environment set for Experiment " << title << 'Broken file?';
+		} else {
+			envSets.append(envs.findSet(o.toString()));
+		}
 	}
 
-	QJsonArray ja = jo["environments"].toArray();
-	for (int i = 0; i < ja.size(); i++) {
-		const QJsonObject& o = ja.at(i).toObject();
-		Environment* e = new Environment();
-		e->label = o["label"].toString();
-		e->big = o["big"].toBool();
-		e->little = o["little"].toBool();
-		e->freq =  o["frequency"].toInt();
-		e->freq_max = o["frequency_max"].toInt();
-		e->freq_min = o["frequency_min"].toInt();
-		e->governor = o["governor"].toString();
+	for (QJsonValueRef v : jo["environments"].toArray()) {
+		const QJsonObject& o = v.toObject();
+		Environment* e = new Environment(o);
 		if (o.contains("runs")) {
-			QJsonArray ra = o["runs"].toArray();
-			for (int j = 0; j < ra.size(); j++) {
-				QJsonObject ro = ra.at(j).toObject();
-				QPair<double,double> v;
-				v.first = ro["from"].toDouble();
-				v.second = ro["to"].toDouble();
+			for (QJsonValueRef vr : o["runs"].toArray()) {
+				QJsonObject ro = vr.toObject();
+				QPair<double,double> v(ro["from"].toDouble(),ro["to"].toDouble());
 				runs[e].push_back(v);
-				wasRun = true;
 			}
+			wasRun = true;
 		}
 	}
 	cooldown_time = jo["cooldown_time"].toInt();
@@ -86,7 +80,6 @@ QString Experiment::prepareMeasurement() {
 QString Experiment::startMeasurement(double time,const Environment* env) {
 	lastEnvironment = env;
 	runs[lastEnvironment].push_back(QPair<double,double>(time,time));
-	qDebug() << "Returning command " << command;
 	return command;
 }
 
@@ -100,17 +93,17 @@ bool Experiment::hasData() const { return wasRun; }
 void Experiment::finishedCleanup(float) {}
 
 StatisticalSet Experiment::aggregate(int unit, const Experiment* e) const {
-	//qDebug() << "Aggregating Experiment " << e->title << "Unit: " << unit;
 	StatisticalSet s(e->data.at(unit)->descriptor);
-	for (const Environment* env : runs.keys()) {
-		//qDebug() << "Extending Set" << env->description();
+	for (const Environment* env : runs.keys())
 		s.extend(env->aggregate(unit,e));
-	}
+
 	return s;
 }
 
 unsigned Experiment::executions() const {
 	unsigned i = 0;
-	for (EnvironmentSet* s : envSets) i += s->environments().size();
+	for (EnvironmentSet* s : envSets)
+		i += s->environments().size();
+
 	return i;
 }

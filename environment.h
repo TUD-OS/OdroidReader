@@ -21,7 +21,6 @@ public:
 		StatisticalSet aggregate(int unit, const Experiment *e) const;
 		StatisticalSet integral(int unit, const Experiment *e) const;
 		DataSeries run(int unit, int run, const Experiment *e) const;
-		bool operator<(const Environment& o) const;
 		void write(QJsonObject& o) const;
 };
 

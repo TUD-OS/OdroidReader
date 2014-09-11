@@ -77,11 +77,8 @@ private:
   ExperimentState es;
   Experiment const* curExp;
   std::vector<Experiment*> toRun;
-  quint32 freq2Int(QString);
   Ui::OdroidReader *ui;
-  //Query query;
   QTextStream ts;
-  //quint32 packetSize;
   QVector<QPointF> samples;
   Experiment* currentExp;
   Environment* currentEnv;
@@ -89,9 +86,7 @@ private:
   QVector<DataSeries*> data;
   QVector<DataSource*> sources;
   QVector<Experiment*> experiments;
-// QList<Environment> environments;
   Environments envs;
-//  QMap<QString,QList<const Environment*>> environmentSets;
   QVector<QCPGraph*> graphs;
   QVector<int> rowMap;
   QVector<DeviceMonitor*> devMonitors;

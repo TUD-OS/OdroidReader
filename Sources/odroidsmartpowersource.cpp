@@ -4,17 +4,6 @@
 #include <iostream>
 #include <QDateTime>
 
-void hexDump(const QByteArray &ba) {
-    for (int i = 0; i < ba.size();i++) {
-        if (i%16 == 0) {
-            std::cerr << std::endl;
-            std::cerr << ba.mid(i,std::min(16,ba.size()-i)).data() << "  ";
-        }
-        std::cerr << "0x" << ba.mid(i,1).toHex().data() << " ";
-    }
-    std::cerr << std::endl;
-}
-
 OdroidSmartPowerSource::OdroidSmartPowerSource(QString path) :
 	DataSource("Odroid"), QHIDevice(path), lastCmd(Command::NONE), _interval(1000), _running(false), restarted(false), _path(path)
 {
@@ -32,18 +21,12 @@ OdroidSmartPowerSource::OdroidSmartPowerSource(QString path) :
 		assert(data.size() == 64);
 		assert(lastCmd != Command::NONE);
         double lastTime = QDateTime::currentMSecsSinceEpoch()/1000.0;
-//		qDebug() << "Got: " << data;
-//        hexDump(data);
 		switch (lastCmd) {
 		  case Command::REQUEST_VERSION:
 				sendCommand(Command::REQUEST_STATUS);
 				read(64,1000);
 				break;
 		  case Command::REQUEST_DATA:
-//				qDebug() << "Voltage: " << QString(data.mid(2,5)).toFloat();
-//				qDebug() << "Current: " << QString(data.mid(10,5)).toFloat();
-//				qDebug() << "Power: " << QString(data.mid(18,5)).toFloat();
-//				qDebug() << "Energy: " << QString(data.mid(24,7)).toFloat();
                 lastTime = getGlobalTime(lastTime);
                 emit dataAvailable(descs.at(0),QString(data.mid(2,5)).toFloat(),lastTime);
 				if (data.at(10) != '-') {
@@ -62,16 +45,17 @@ OdroidSmartPowerSource::OdroidSmartPowerSource(QString path) :
 		  case Command::REQUEST_STATUS:
 				getDataTmr.start(_interval);
 				break;
+		  case Command::NONE: ; //Just to make the compiler happy
 		}
 		emit connected();
 	});
 }
 
-int OdroidSmartPowerSource::sendCommand(Command cmd, char param) {
+int OdroidSmartPowerSource::sendCommand(Command cmd) {
 	lastCmd = cmd;
 	QByteArray bw(65,'\0');
 	bw[1] = static_cast<unsigned char>(cmd);
-	bw[2] = param;
+	bw[2] = 0x0; //param;
 	int ret = write(bw);
 	assert(ret != -1);
 	return ret;

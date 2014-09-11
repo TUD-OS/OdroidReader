@@ -64,7 +64,7 @@
            <enum>QTabWidget::West</enum>
           </property>
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="tab">
            <attribute name="title">
@@ -162,7 +162,7 @@
                  <string/>
                 </property>
                 <property name="text">
-                 <string>141.76.49.9</string>
+                 <string>192.168.1.1</string>
                 </property>
                </widget>
               </item>
@@ -387,7 +387,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="overview">
        <attribute name="title">

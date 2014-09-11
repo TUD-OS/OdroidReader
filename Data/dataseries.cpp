@@ -19,6 +19,17 @@ DataSeries::DataSeries(const DataSeries &src) : QObject(src.parent()), descripto
 	_avg = src._avg;
 }
 
+void DataSeries::clear() {
+	_min = std::numeric_limits<double>::max();
+	_max = std::numeric_limits<double>::min();
+	_avg = 0;
+	timestamps.clear();
+	values.clear();
+	emit newAvg(0);
+	emit newMax(_max);
+	emit newMin(_min);
+}
+
 DataSeries::DataSeries(const DataSeries &src, double from, double to, bool timeAdjust) :
 	descriptor(src.descriptor)
 {
@@ -50,10 +61,13 @@ void DataSeries::addValue(double time, double value, bool scale) {
 	}
 	double _oldavg = _avg;
 	if (values.size() > 0) {
-		double t = time - timestamps.last();
-		double v1 = values.last();
-		double avgval = v1*t+(value-v1)*t/2;
-		_avg += (avgval-_avg)/values.size();
+		//double t = time - timestamps.last();
+		//double v1 = values.last();
+		double avgval = value; //v1*t+(value-v1)*t/2;
+		_avg += (avgval-_avg)/(values.size()+1);
+		//qWarning() << _avg << avgval;
+	} else {
+		_avg = value;
 	}
 	values.append(value);
 	timestamps.append(time);

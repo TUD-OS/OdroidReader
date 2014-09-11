@@ -22,6 +22,7 @@ public:
 	DataSeries(const DataSeries& src, double from, double to, bool timeAdjust = true);
 	DataSeries(const DataSeries&);
 	void addValue(double time, double value, bool scale = true);
+	void clear();
 	const QVector<double>& getTimestamps() { return timestamps; }
 	const QVector<double>& getValues() { return values; }
 	double getAvg() const { return _avg; }

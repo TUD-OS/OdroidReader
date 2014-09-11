@@ -1,25 +1,13 @@
-//LD_LIBRARY_PATH=$LD_LIBRARY_PATH:. ./ffmpeg -i /sdcard/Movies/big_buck_bunny_1080p_h264.mov -f rawvideo /dev/null
-//am start -S -a com.mxtech.intent.result.VIEW -n com.mxtech.videoplayer.ad/com.mxtech.videoplayer.ad.ActivityScreen -d file:////sdcard//Movies//big_buck_bunny_1080p_h264.mov
 #include "odroidreader.h"
 #include "ipvalidator.h"
 #include "ui_odroidreader.h"
-#include <QtNetwork/QTcpSocket>
-#include <QMessageBox>
 #include <cassert>
-#include <QColor>
-#include <QFile>
-#include "qcustomplot.h"
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QFileDialog>
 #include "environmentdelegate.h"
-#include <QJsonArray>
 #include <ui/tabstyle.h>
 #include <smartpowermonitor.h>
 #include <Sources/networksource.h>
 
 Q_DECLARE_METATYPE(const Experiment*)
-Q_DECLARE_METATYPE(DataSource*)
 Q_DECLARE_METATYPE(QListWidgetItem*)
 
 QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254),QColor(91,53,40),QColor(133,196,77),
@@ -39,24 +27,30 @@ OdroidReader::OdroidReader(QWidget *parent) :
 	ui->sourceType->tabBar()->setStyle(new TabStyle(Qt::Horizontal));
 	ui->sensors->setColumnWidth(0,30);
 	ui->globalPlot->setInteractions(QCP::iRangeDrag | QCP::iRangeZoom);
+	connect(ui->globalPlot,&QCustomPlot::mouseDoubleClick,[this] (QMouseEvent*) {
+		for (DataSeries* d : data) d->clear();
+		for (QCPGraph* g : graphs) if (g != nullptr) g->clearData();
+	});
+
 	DeviceMonitor *dm = new SmartPowerMonitor();
 	devMonitors.append(dm);
 	dm->monitor(1000);
+
 	connect(ui->globalPlot,&QCustomPlot::mouseMove,this,&OdroidReader::plotMousePress);
+
 	connect(dm,&DeviceMonitor::addSource,[this] (DataSource* src) {
 		ui->foundDevices->addItem(src->descriptor(),QVariant::fromValue(src));
 	});
+
 	connect(dm,&DeviceMonitor::removeSource, [this] (DataSource* src) {
 		if (sources.contains(src)) {
-			qDebug() << "Removing Source!";
 			if (src->isRunning()) src->start(); //Terminate if running
 			sources.remove(sources.indexOf(src));
 			delete src->property("Item").value<QListWidgetItem*>();
 		}
-		//TODO remove from sources if it has been added!
-	   qDebug() << "Removed Source!";
 	   ui->foundDevices->removeItem(ui->foundDevices->findData(QVariant::fromValue(src)));
 	});
+
     ui->stopSampling->hide();
 	ui->loadProgress->hide();
 
@@ -67,17 +61,20 @@ OdroidReader::OdroidReader(QWidget *parent) :
         ui->addDevice->setEnabled(true);
         ui->addConnection->setEnabled(true);
 	});
+
     connect(ui->startSampling,&QPushButton::clicked,[this]() {
 		hasExecuted = true;
         ui->addDevice->setEnabled(false);
         ui->addConnection->setEnabled(false);
 	});
+
     connect(ui->startSampling,&QPushButton::clicked,[this] () {
         ui->startSampling->hide();
         ui->stopSampling->show();
 		ui->repetitions->setEnabled(true);
 	});
-    connect(ui->stopSampling,&QPushButton::clicked,[this] () {
+
+	connect(ui->stopSampling,&QPushButton::clicked,[this] () {
         for (DataSource* src : sources) src->stop();
         ui->startSampling->show();
         ui->stopSampling->hide();
@@ -86,7 +83,8 @@ OdroidReader::OdroidReader(QWidget *parent) :
 		ui->environmentProgress->hide();
 		ui->repetitions->setDisabled(true);
 	});
-    connect(qApp,SIGNAL(aboutToQuit()),this,SLOT(aboutToQuit()));
+
+	connect(qApp,SIGNAL(aboutToQuit()),this,SLOT(aboutToQuit()));
 	connect(&envs,&Environments::addedSet, [this] (const EnvironmentSet* e) {
 		ui->availEnvs->addItem(e->name());
 	});
@@ -97,6 +95,7 @@ OdroidReader::OdroidReader(QWidget *parent) :
 		for (QListWidgetItem *i : ui->expEnvs->findItems(e->name(),Qt::MatchCaseSensitive))
 			delete i;
 	});
+
 	connect(&envs,&Environments::renamingSet, [this] (QString oldName, QString newName) {
 		int oldIdx = ui->availEnvs->findText(oldName);
 		if (oldIdx == -1) return;
@@ -116,14 +115,17 @@ OdroidReader::OdroidReader(QWidget *parent) :
 	QJsonObject expData = QJsonDocument::fromJson(f.readAll()).object();
 	for (const QJsonValue& v : expData["environments"].toArray())
 		envs.addEnvironment(new Environment(v.toObject()));
-	for (const QJsonValue& v : expData["sets"].toArray()) {
+
+	for (const QJsonValue& v : expData["sets"] .toArray()) {
 		QString name = v.toObject()["name"].toString();
 		EnvironmentSet* s = envs.addSet(name);
-		for (const QJsonValue& idx : v.toObject()["items"].toArray()) {
+
+		for (const QJsonValue& idx : v.toObject()["items"].toArray())
 			s->addEnvironment(envs.environments()[idx.toInt()]);
-		}
+
 		ui->envSets->addItem(name);
 	}
+
 	for (const QJsonValue& v : expData["experiments"].toArray())
 		experiments.append(new Experiment(v.toObject(), data, envs));
 	updateExperiments();
@@ -141,6 +143,7 @@ OdroidReader::~OdroidReader()
 
 void OdroidReader::updateCurve(int row, int col) {
 	if (col != 0) return;
+
 	bool enable = ui->sensors->item(row,col)->checkState() == Qt::Checked;
 	if (enable && graphs.at(row) == nullptr) {
 		if (origcols.count() == 0) {
@@ -148,17 +151,19 @@ void OdroidReader::updateCurve(int row, int col) {
 			return;
 		}
 		QColor color = origcols.takeFirst();
-		graphs[row] = ui->globalPlot->addGraph();
-		graphs[row]->setName(data.at(rowMap[row])->descriptor->name());
-		graphs[row]->setProperty("unit",data.at(rowMap[row])->descriptor->unit());
-		graphs[row]->setPen(color);
-		graphs.at(row)->setData(data.at(rowMap[row])->getTimestamps(), data.at(rowMap[row])->getValues());
-		connect(data.at(rowMap[row]),&DataSeries::newValue,[row,this](double time, double value) {
-			graphs.at(row)->addData(time,value);
+		QCPGraph* graph = ui->globalPlot->addGraph();
+		DataSeries* series =  data[rowMap[row]];
+		graph->setName(series->descriptor->name());
+		graph->setProperty("unit",series->descriptor->unit());
+		graph->setPen(color);
+		graph->setData(series->getTimestamps(), series->getValues());
+		connect(series,&DataSeries::newValue,[graph,this](double time, double value) {
+			graph->addData(time,value);
 			ui->globalPlot->rescaleAxes();
 			ui->globalPlot->yAxis->scaleRange(1.2,ui->globalPlot->yAxis->range().center());
 			ui->globalPlot->replot();
 		});
+		graphs[row] = graph;
 		ui->sensors->item(row,col)->setBackgroundColor(color);
 	} else if (!enable && graphs.at(row) != nullptr){
 		disconnect(data.at(rowMap[row]),SIGNAL(newValue(double,double)),0,0);
@@ -173,9 +178,9 @@ void OdroidReader::updateCurve(int row, int col) {
 }
 
 void OdroidReader::updateSensors() {
+	ui->sensors->clear();
 	ui->sensors->setRowCount(data.size());
 	rowMap.clear();
-	//TODO: Shound we remove old data?
 	int i = 0;
 	for (DataSeries* d : data) {
 		if (d == nullptr) continue;
@@ -193,12 +198,7 @@ void OdroidReader::updateSensors() {
 		connect(d,&DataSeries::newAvg,[this,i](double val) { ui->sensors->item(i,5)->setText(QString::number(val));});
 		ui->sensors->setItem(i++,6,new QTableWidgetItem(d->descriptor->unit()));
 	}
-	connect(ui->sensors,SIGNAL(cellChanged(int,int)),this,SLOT(updateCurve(int,int)));
-}
-
-quint32 OdroidReader::freq2Int(QString s) {
-	s.chop(4);
-	return s.toInt();
+	connect(ui->sensors,&QTableWidget::cellChanged,this,&OdroidReader::updateCurve);
 }
 
 void OdroidReader::updateExperiments() {
@@ -277,57 +277,55 @@ void OdroidReader::on_removeExperiment_clicked()
 
 void OdroidReader::runExperiments(DataSource& source, double time = 0) {
 	assert(source.canExecute());
+	Experiment* e = toRun.back();
 	switch (es) {
 		case ExperimentState::Idle:
 			es = ExperimentState::Prepare;
-			source.execute(toRun.back()->prepareMeasurement());
+			source.execute(e->prepareMeasurement());
 			break;
 		case ExperimentState::Prepare:
-			if (toRun.back()->envSets.size() <= lastSet) {
+			if (e->envSets.size() <= lastSet) {
 				qDebug() << "No sets selected!";
 				disconnect(&source,SIGNAL(commandFinished(DataSource&,double)),0,0);
 				return;
 			}
-			if (toRun.back()->envSets.at(lastSet)->environments().size() <= lastEnv) {
+			if (e->envSets.at(lastSet)->environments().size() <= lastEnv) {
 				qDebug() << "No envs in selected set!";
 				disconnect(&source,SIGNAL(commandFinished(DataSource&,double)),0,0);
 				return;
 			}
-			source.setupEnvironment(toRun.back()->envSets.at(lastSet)->environments().at(lastEnv));
+			source.setupEnvironment(e->envSets.at(lastSet)->environments().at(lastEnv));
 			es = ExperimentState::Execute;
 			qDebug() << "Start @" << time;
-			source.execute(toRun.back()->startMeasurement(time,toRun.back()->envSets.at(lastSet)->environments().at(lastEnv)));
+			source.execute(e->startMeasurement(time,e->envSets.at(lastSet)->environments().at(lastEnv)));
 			break;
 		case ExperimentState::Execute:
 			es = ExperimentState::Cleanup;
 			{
 				QTimer* tmr = new QTimer();
 				tmr->setSingleShot(true);
-				connect(tmr,&QTimer::timeout,[&source,this,tmr,time] () {
+				connect(tmr,&QTimer::timeout,[&source,this,tmr,time,e] () {
 					source.execute(toRun.back()->cleanupMeasurement(time+toRun.back()->cooldown_time));
 					tmr->deleteLater();
 				});
-				tmr->start(toRun.back()->cooldown_time*1000);
+				tmr->start(e->cooldown_time*1000);
 			}
-			if (toRun.back()->cooldown_time != 0)
-				qDebug() << "Stop @" << time << "+" << (toRun.back()->cooldown_time);
-			else
-				qDebug() << "Stop @" << time;
 			break;
 		case ExperimentState::Cleanup:
-			toRun.back()->finishedCleanup(time);
+			e->finishedCleanup(time);
 			ui->environmentProgress->setValue(ui->environmentProgress->value()+1);
 			ui->experimentProgress->setValue(ui->experimentProgress->value()+1);
 			ui->totalProgress->setValue(ui->totalProgress->value()+1);
 			if (++repetition == ui->repetitions->value()) {
-				if (++lastEnv == toRun.back()->envSets.at(lastSet)->environments().size()) {
-					if (++lastSet == toRun.back()->envSets.size()) {
+				if (++lastEnv == e->envSets.at(lastSet)->environments().size()) {
+					if (++lastSet == e->envSets.size()) {
 						qDebug() << "Poping last of " << toRun.size();
 						toRun.pop_back();
 						if (toRun.size() > 0) {
-							ui->experimentProgress->setMaximum(toRun.back()->executions()*ui->repetitions->value());
+							e = toRun.back();
+							ui->experimentProgress->setMaximum(e->executions()*ui->repetitions->value());
 							ui->experimentProgress->setValue(0);
-							ui->experimentProgress->setFormat(QString("Experiment: %1 (Environment: %v/%m)").arg(toRun.back()->title));
+							ui->experimentProgress->setFormat(QString("Experiment: %1 (Environment: %v/%m)").arg(e->title));
 						}
 						lastEnv = 0;
 						lastSet = 0;
@@ -338,27 +336,26 @@ void OdroidReader::runExperiments(DataSource& source, double time = 0) {
 				ui->environmentProgress->setValue(0);
 				ui->environmentProgress->setMaximum(ui->repetitions->value());
 				if (toRun.size() > 0) {
-					ui->environmentProgress->setFormat(QString("Environment: %1 (Run: %v/%m)").arg(toRun.back()->envSets.at(lastSet)->environments().at(lastEnv)->label));
+					ui->environmentProgress->setFormat(QString("Environment: %1 (Run: %v/%m)").arg(e->envSets.at(lastSet)->environments().at(lastEnv)->label));
 				}
 				repetition = 0;
 			}
 			ui->environmentProgress->setValue(repetition);
 			es = ExperimentState::Idle;
 			if (!toRun.empty()) {
-				qDebug() << "Tailtime: " << toRun.back()->tail_time;
-				if (toRun.back()->tail_time != 0) {
+				qDebug() << "Tailtime: " << e->tail_time;
+				if (e->tail_time != 0) {
 					QTimer* tmr = new QTimer();
 					tmr->setSingleShot(true);
 					connect(tmr,&QTimer::timeout,[&source,this,tmr] () {
 						tmr->deleteLater();
 						runExperiments(source);
 					});
-					tmr->start(toRun.back()->tail_time*1000);
+					tmr->start(e->tail_time*1000);
 				} else {
 					runExperiments(source,time);
 				}
 			} else {
-				qDebug() << "DONE!";
 				ui->expSelect->clear();
 				for (const Experiment* e : experiments)
 					if (e->hasData())
@@ -384,13 +381,11 @@ void OdroidReader::runAllOnSource(const QAction *act)
 	lastEnv = 0;
 	lastSet = 0;
 	if (toRun.size() != 0) {
-		//ui->experimentProgress->setFormat(QString("Experiment: %1 (Environment: %v/%m)").arg(toRun.back()->title));
 		ui->experimentProgress->setMaximum(toRun.back()->executions()*ui->repetitions->value());
 		ui->experimentProgress->setValue(0);
 		ui->environmentProgress->setFormat(QString("Environment: %1 (Run: %v/%m)").arg(toRun.back()->envSets.at(lastSet)->environments().at(lastEnv)->label));
 		ui->environmentProgress->setMaximum(ui->repetitions->value());
 		ui->environmentProgress->setValue(0);
-//		ui->totalProgress->setFormat("Total: %p% (Experiment: %v/%m)");
 		ui->totalProgress->setMaximum(runs);
 		ui->totalProgress->setValue(0);
 	}
@@ -421,8 +416,6 @@ void OdroidReader::runSelectedOnSource(const QAction *act)
 	lastEnv = 0;
 	lastSet = 0;
 	ui->environmentProgress->setFormat(QString("Environment: %1 (Run: %v/%m)").arg(toRun.back()->envSets.at(lastSet)->environments().at(lastEnv)->label));
-//	ui->experimentProgress->setFormat(QString("Experiment: %1 (Environment: %v/%m)").arg(toRun.back()->title));
-//	ui->totalProgress->setFormat("Total: %p% (Experiment: %v/%m)");
 	connect(ds,SIGNAL(commandFinished(DataSource&,double)),this,SLOT(runExperiments(DataSource&,double)));
 	ui->totalProgress->show();
 	ui->experimentProgress->show();
@@ -469,7 +462,6 @@ void OdroidReader::aboutToQuit()
 			qWarning() << "Could not save runs :(!";
 		}
 		QJsonArray datas;
-		//TODO: need to rework to new data model!
 		for (DataSeries *ds : data) {
 			QJsonObject series;
 			series["descriptor"] = ds->descriptor->json();

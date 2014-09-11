@@ -7,36 +7,30 @@ TabStyle::TabStyle(Qt::Orientation orientation, QStyle *baseStyle)
 QSize TabStyle::sizeFromContents(ContentsType type,const QStyleOption *option, const QSize &size, const QWidget *widget) const
 {
 	QSize s = QProxyStyle::sizeFromContents(type, option, size, widget);
+	if (type != QStyle::CT_TabBarTab)
+		return s;
 
-	if (type == QStyle::CT_TabBarTab)
+	if (const QStyleOptionTab * tab = qstyleoption_cast<const QStyleOptionTab *>(option))
 	{
-		if (const QStyleOptionTab * tab = qstyleoption_cast<const QStyleOptionTab *>(option))
+		switch (tab->shape)
 		{
-			if (mOrientation == Qt::Horizontal)
-			{
-				switch (tab->shape)
-				{
-					case QTabBar::RoundedWest:      s.transpose();  break;
-					case QTabBar::RoundedEast:      s.transpose();  break;
-					case QTabBar::TriangularWest:   s.transpose();  break;
-					case QTabBar::TriangularEast:   s.transpose();  break;
-					default:                                        break;
-				}
-			}
-			else if (mOrientation == Qt::Vertical)
-			{
-				switch (tab->shape)
-				{
-					case QTabBar::RoundedNorth:     s.transpose();  break;
-					case QTabBar::RoundedSouth:     s.transpose();  break;
-					case QTabBar::TriangularNorth:  s.transpose();  break;
-					case QTabBar::TriangularSouth:  s.transpose();  break;
-					default:                                        break;
-				}
-			}
+			case QTabBar::RoundedWest:
+			case QTabBar::RoundedEast:
+			case QTabBar::TriangularWest:
+			case QTabBar::TriangularEast:
+				if (mOrientation == Qt::Horizontal)
+					s.transpose();
+				break;
+			case QTabBar::RoundedNorth:
+			case QTabBar::RoundedSouth:
+			case QTabBar::TriangularNorth:
+			case QTabBar::TriangularSouth:
+				if (mOrientation == Qt::Vertical)
+					s.transpose();
+			default:
+				break;
 		}
 	}
-
 	return s;
 }
 

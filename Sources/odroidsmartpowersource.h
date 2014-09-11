@@ -29,7 +29,7 @@ class OdroidSmartPowerSource : public DataSource, public QHIDevice
 	QTimer getDataTmr;
 private slots:
 	void getData();
-	int sendCommand(Command cmd, char param = 0x0);
+	int sendCommand(Command cmd);
 public:
 	OdroidSmartPowerSource(QString path);
 	void setInterval(int interval) { _interval = interval; }

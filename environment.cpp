@@ -20,7 +20,7 @@ QString Environment::description() const {
 	} else {
 		bl = big?"big":"LITTLE";
 	}
-	return desc.arg(QString::number(freq),QString::number(freq_min),QString::number(freq_max),governor,bl);
+	return desc.arg(freq).arg(freq_min).arg(freq_max).arg(governor,bl);
 }
 
 StatisticalSet Environment::integral(int unit, const Experiment* e) const {
@@ -41,34 +41,22 @@ StatisticalSet Environment::integral(int unit, const Experiment* e) const {
 			last = QPair<double,double>(ts,val);
 		}
 		allRuns.addValue(value);
+		allRuns.addTime(s.getTimestamps().last()-s.getTimestamps().first());
 	}
 	return allRuns;
 }
 
 StatisticalSet Environment::aggregate(int unit, const Experiment* e) const {
 	StatisticalSet s(e->data.at(unit)->descriptor);
-	//qDebug() << "Aggregating environment over" << e->runs[this].size() << "runs";
-	for (int i = 0; i < e->runs[this].size(); i++) {
+	for (int i = 0; i < e->runs[this].size(); i++)
 		s.addValue(run(unit,i,e).getAvg());
-	}
+
 	return s;
 }
 
 DataSeries Environment::run(int unit, int run, const Experiment* e) const {
-	//qDebug() << "Extracting Dataseries ...";
 	const QPair<double,double> &r = e->runs[this].at(run);
 	return DataSeries(*e->data.at(unit),r.first,r.second);
-}
-
-bool Environment::operator<(const Environment& o) const {
-	if (label < o.label) return true;
-	if (governor < o.governor) return true;
-	if (freq_min < o.freq) return true;
-	if (freq_max < o.freq_max) return true;
-	if (freq < o.freq) return true;
-	if (big < o.big) return true;
-	if (little < o.little) return true;
-	return false;
 }
 
 void Environment::write(QJsonObject &o) const {

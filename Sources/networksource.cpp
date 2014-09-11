@@ -49,7 +49,7 @@ void NetworkSource::readData() {
 		case Query::GET: //Rework this!
 			//assert(false || "Not yet :(");
 			if (socket.bytesAvailable() < packetSize+8) return;
-			assert(socket.bytesAvailable() == packetSize+8);
+			//assert(socket.bytesAvailable() == packetSize+8);
 			lastTime = networkDecode<quint32>(socket.read(4));
 			lastTime += networkDecode<quint32>(socket.read(4))/1000000000.0;
             lastTime = getGlobalTime(lastTime);
@@ -148,6 +148,9 @@ void NetworkSource::readData() {
 		  break;
 		case Query::NONE:
 			qDebug() << "ERROR: Got data without query!";
+	}
+	if (socket.bytesAvailable() >= packetSize+8) {
+		readData();
 	}
 }
 

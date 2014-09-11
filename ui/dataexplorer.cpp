@@ -23,7 +23,7 @@ DataExplorer::~DataExplorer()
 }
 
 void DataExplorer::updateDetails() {
-	qDebug() << "SELECT!";
+	//qDebug() << "SELECT!";
     ui->runPlot->clearPlottables();
 	QVector<QString> labels;
 	QVector<double> ticks;
@@ -50,6 +50,10 @@ void DataExplorer::updateDetails() {
 			StatisticalSet vals = exp->runs.keys().at(envid)->integral(unitid,exp);
 			QCPStatisticalBox* b = new QCPStatisticalBox(ui->runPlot->xAxis,ui->runPlot->yAxis);
 			b->setData(colid,vals.min(),vals.quantile(0.25),vals.median(),vals.quantile(0.75),vals.max());
+			b->setProperty("StdDev",vals.getStdDev());
+			b->setProperty("avg",vals.avg());
+			b->setProperty("avgTime",vals.avgTime());
+			qWarning() << exp->data.at(unitid)->descriptor->name() <<  exp->runs.keys().at(envid)->label << vals.avg() << vals.avgTime() << vals.getStdDev();
 			ui->runPlot->addPlottable(b);
 			labels.append(QString("%1 @ %2").arg(exp->data.at(unitid)->descriptor->name(),exp->runs.keys().at(envid)->label));
 			ticks.append(colid++);
@@ -85,6 +89,7 @@ void DataExplorer::updateEnvironment() {
             b->setProperty("UID",unit);
             b->setProperty("EID",eid++);
 			ui->selectEnvironment->addPlottable(b);
+			b->setSelected(true);
 			labels.append(QString("%1 @ %2").arg(exp->data.at(unit)->descriptor->name(),e->label));
 			ticks.append(idx++);
 		}
@@ -104,6 +109,7 @@ void DataExplorer::updateEnvironment() {
 	if (ui->axisFromZero->isChecked())
 		ui->selectEnvironment->yAxis->setRangeLower(0);
 	ui->selectEnvironment->replot();
+	updateDetails();
 }
 
 void DataExplorer::on_runNo_valueChanged(int)
@@ -203,31 +209,45 @@ void DataExplorer::pointInfo(QMouseEvent *event)
 	if (!plottable) return;
 
 	double x = ui->runPlot->xAxis->pixelToCoord(event->localPos().x());
+	QToolTip::hideText();
 
 	QCPGraph *graph = qobject_cast<QCPGraph*>(plottable);
-	if (!graph) return;
+	if (graph) {
+		double key = 0;
+		double value = 0;
+		bool ok = false;
+		double m = std::numeric_limits<double>::max();
+		for (QCPData data : graph->data()->values()) {
+			double d = qAbs(x - data.key);
 
-	double key = 0;
-	double value = 0;
-	bool ok = false;
-	double m = std::numeric_limits<double>::max();
-	for (QCPData data : graph->data()->values()) {
-		double d = qAbs(x - data.key);
+			if(d < m) {
+				key = data.key;
+				value = data.value;
 
-		if(d < m) {
-			key = data.key;
-			value = data.value;
-
-			ok = true;
-			m = d;
+				ok = true;
+				m = d;
+			}
 		}
+		if (!ok) return;
+		QToolTip::showText(event->globalPos(),
+			tr("<center><b>%L1</b><br/>%L2 %L3@ %L4s</center>").
+				arg(graph->name().isEmpty() ? "..." : graph->name()).
+				arg(value).arg(graph->property("unit").toString()).
+				arg(key),
+			ui->runPlot, ui->runPlot->rect());
+		return;
 	}
-	if (!ok) return;
-	QToolTip::hideText();
-	QToolTip::showText(event->globalPos(),
-		tr("<center><b>%L1</b><br/>%L2 %L3@ %L4s</center>").
-			arg(graph->name().isEmpty() ? "..." : graph->name()).
-			arg(value).arg(graph->property("unit").toString()).
-			arg(key),
-		ui->runPlot, ui->runPlot->rect());
+
+	QCPStatisticalBox *graphBox = qobject_cast<QCPStatisticalBox*>(plottable);
+	if (graphBox) {
+		QToolTip::showText(event->globalPos(),
+			tr("<center><b>%L1</b><br/></center>Max: %2<br/>Upper: %3<br/>Median: %4<br/>Lower: %5<br/>Min: %6<br/>StdDev: %7<br/>Avg: %8<br/>Avg Time: %9").
+				arg(graphBox->name().isEmpty() ? "..." : graphBox->name()).
+				arg(graphBox->maximum()).arg(graphBox->upperQuartile()).arg(graphBox->median()).
+				arg(graphBox->lowerQuartile()).arg(graphBox->minimum()).
+				arg(graphBox->property("StdDev").toDouble()).arg(graphBox->property("avg").toDouble()).
+				arg(graphBox->property("avgTime").toDouble()),
+			ui->runPlot, ui->runPlot->rect());
+	}
+
 }
