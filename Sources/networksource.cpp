@@ -9,7 +9,7 @@ T networkDecode(QByteArray const &ba) {
 }
 
 NetworkSource::NetworkSource(QString name, QString address, quint16 port, int interval, QObject *parent) :
-	DataSource(name,parent), _address(address), _port(port), started(false), _running(false), reconnect(false)
+    DataSource(name,parent), _address(address), _port(port), started(false), _running(false), reconnect(false)
 {
 	getTimer.setInterval(interval);
 	connect(&getTimer,&QTimer::timeout, [&]() { socket.write("GET\n"); });
@@ -49,10 +49,10 @@ void NetworkSource::readData() {
 		case Query::GET: //Rework this!
 			//assert(false || "Not yet :(");
 			if (socket.bytesAvailable() < packetSize+8) return;
-			assert(socket.bytesAvailable() == packetSize+8);
+			//assert(socket.bytesAvailable() == packetSize+8);
 			lastTime = networkDecode<quint32>(socket.read(4));
 			lastTime += networkDecode<quint32>(socket.read(4))/1000000000.0;
-
+            lastTime = getGlobalTime(lastTime);
 			for (int i = 0; i < descs.size(); i++) {
 				const DataDescriptor* d = descs.at(i);
 				switch (d->type()) {
@@ -128,6 +128,7 @@ void NetworkSource::readData() {
 				QString _name = ba.left(name_len).constData();
 				ba.remove(0,name_len);
 				QString _unit = ba.constData();
+				_unit = _unit.trimmed();
 				if (reconnect) {
 					assert(descs.at(recon_ctr)->name() == _name &&
 					descs.at(recon_ctr)->name() == _name &&
@@ -148,6 +149,9 @@ void NetworkSource::readData() {
 		case Query::NONE:
 			qDebug() << "ERROR: Got data without query!";
 	}
+	if (socket.bytesAvailable() >= packetSize+8) {
+		readData();
+	}
 }
 
 void NetworkSource::execute(QString exec) {
@@ -155,33 +159,35 @@ void NetworkSource::execute(QString exec) {
 		emit commandFinished(*this,lastTime);
 		return;
 	}
-	assert(started == false); //TODO! This implies single instances
+	qDebug() << "Executing: " << exec;
+	//assert(started == false); //TODO! This implies single instances
 	socket.write("EXEC\n");
 	socket.write(exec.append("\n").toStdString().c_str());
 }
 
-void NetworkSource::setupEnvironment(const Experiment::Environment &env) {
+void NetworkSource::setupEnvironment(const Environment* env) {
 	socket.write("SETUP\n");
-	socket.write(QString("%1\n").arg(env.governor).toStdString().c_str());
-	qDebug() << "Governor is:" << env.governor << env.freq << env.freq_min << "-" << env.freq_max;
-	if (env.governor == "userspace")
-		socket.write(std::to_string(env.freq).append("000\n").c_str());
-	socket.write(std::to_string(env.freq_min).append("000\n").c_str());
-	socket.write(std::to_string(env.freq_max).append("000\n").c_str());
+	socket.write(QString("%1\n").arg(env->governor).toStdString().c_str());
+	qDebug() << "Governor is:" << env->governor << env->freq << env->freq_min << "-" << env->freq_max;
+	if (env->governor == "userspace")
+		socket.write(std::to_string(env->freq).append("000\n").c_str());
+	socket.write(std::to_string(env->freq_min).append("000\n").c_str());
+	socket.write(std::to_string(env->freq_max).append("000\n").c_str());
 }
 
 void NetworkSource::start() {
-	_running = !_running;
-	if (_running) {
-		qDebug() << "Connecting to" << descriptor();
-		connect(&socket,SIGNAL(error(QAbstractSocket::SocketError)),this,SLOT(conerror(QAbstractSocket::SocketError)));
-		connect(&socket,SIGNAL(readyRead()),this,SLOT(readData()));
-		connect(&socket,&QTcpSocket::disconnected,[this]() { emit disconnected(); });
-		socket.connectToHost(_address,_port);
-	} else {
-		qDebug() << "Disconnecting from"  << descriptor();
-		reconnect = true;
-		getTimer.stop();
-		socket.disconnectFromHost();
-	}
+    if (_running) return;
+    _running = true;
+    connect(&socket,SIGNAL(error(QAbstractSocket::SocketError)),this,SLOT(conerror(QAbstractSocket::SocketError)));
+    connect(&socket,SIGNAL(readyRead()),this,SLOT(readData()));
+    connect(&socket,&QTcpSocket::disconnected,[this]() { emit disconnected(); });
+    socket.connectToHost(_address,_port);
+}
+
+void NetworkSource::stop() {
+    if (!_running) return;
+    _running = false;
+    reconnect = true;
+    getTimer.stop();
+    socket.disconnectFromHost();
 }

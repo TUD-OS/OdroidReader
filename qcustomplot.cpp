@@ -18222,7 +18222,7 @@ double QCPStatisticalBox::selectTest(const QPointF &pos, bool onlySelectable, QV
 	  return mParentPlot->selectionTolerance()*0.99;
 
 	// min/max whiskers:
-	if (mMinimum == mMaximum) {
+	if (mMinimum == mMaximum || abs(mMinimum-mMaximum) < 0.1) {
 		double diff;
 		pixelsToCoords(QPointF(mParentPlot->selectionTolerance(),mParentPlot->selectionTolerance()),diff,diff);
 		if (QCPRange(mMinimum-diff, mMaximum+diff).contains(posValue))

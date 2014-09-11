@@ -27,9 +27,17 @@ class OdroidSmartPowerSource : public DataSource, public QHIDevice
 		NONE              = 0x00
 	};
 	Command lastCmd;
-	int sendCommand(Command cmd, char param = 0x0);
+	int _interval;
+	QVector<const DataDescriptor*> descs;
+	bool _running, restarted;
+	QString _path;
+	QTimer getDataTmr;
+private slots:
+	void getData();
+	int sendCommand(Command cmd);
 public:
 	OdroidSmartPowerSource(QString path);
+	void setInterval(int interval) { _interval = interval; }
 	QString path() { return _path; }
 	bool canExecute() const { return false; }
 	bool isRunning() const { return false; }
@@ -37,6 +45,7 @@ public:
 
 public slots:
 	void start();
+    void stop();
 };
 
 #endif // ODROIDSMARTPOWERSOURCE_H

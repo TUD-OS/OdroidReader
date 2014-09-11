@@ -1,6 +1,7 @@
 #include "dataexplorer.h"
 #include "ui_dataexplorer.h"
-
+#include "environment.h"
+#include <QToolTip>
 static QList<QColor> origcols({QColor(7,139,119),QColor(252,138,74),QColor(100,170,254),QColor(91,53,40),QColor(133,196,77),
 					  QColor(104,115,15),QColor(133,3,43),QColor(188,186,111),QColor(168,115,19),QColor(63,184,67)});
 
@@ -13,6 +14,7 @@ DataExplorer::DataExplorer(QWidget *parent) :
 	ui->selectMetric->setSelectionTolerance(5);
 	ui->selectEnvironment->setSelectionTolerance(5);
 	ui->runPlot->setSelectionTolerance(5);
+	connect(ui->runPlot,&QCustomPlot::mouseMove,this,&DataExplorer::pointInfo);
 }
 
 DataExplorer::~DataExplorer()
@@ -21,7 +23,7 @@ DataExplorer::~DataExplorer()
 }
 
 void DataExplorer::updateDetails() {
-	qDebug() << "SELECT!";
+	//qDebug() << "SELECT!";
     ui->runPlot->clearPlottables();
 	QVector<QString> labels;
 	QVector<double> ticks;
@@ -33,8 +35,10 @@ void DataExplorer::updateDetails() {
 		for (QCPAbstractPlottable *p : ui->selectEnvironment->selectedPlottables()) {
 			int unitid = p->property("UID").toInt();
 			int envid = p->property("EID").toInt();
-			DataSeries v = exp->environments.at(envid).run(unitid,ui->runNo->value(),*exp);
+			DataSeries v = exp->runs.keys().at(envid)->run(unitid,ui->runNo->value(),exp);
 			QCPGraph *g = ui->runPlot->addGraph();
+			g->setName(v.descriptor->name()+" @ "+exp->runs.keys().at(envid)->label);
+			g->setProperty("Unit",v.descriptor->unit());
 			g->setPen(origcols[colid++%origcols.size()]);
 			g->setData(v.getTimestamps(),v.getValues());
 		}
@@ -43,11 +47,15 @@ void DataExplorer::updateDetails() {
 		for (QCPAbstractPlottable *p : ui->selectEnvironment->selectedPlottables()) {
 			int unitid = p->property("UID").toInt();
 			int envid = p->property("EID").toInt();
-			StatisticalSet vals = exp->environments.at(envid).integral(unitid,*exp);
+			StatisticalSet vals = exp->runs.keys().at(envid)->integral(unitid,exp);
 			QCPStatisticalBox* b = new QCPStatisticalBox(ui->runPlot->xAxis,ui->runPlot->yAxis);
 			b->setData(colid,vals.min(),vals.quantile(0.25),vals.median(),vals.quantile(0.75),vals.max());
+			b->setProperty("StdDev",vals.getStdDev());
+			b->setProperty("avg",vals.avg());
+			b->setProperty("avgTime",vals.avgTime());
+			qWarning() << exp->data.at(unitid)->descriptor->name() <<  exp->runs.keys().at(envid)->label << vals.avg() << vals.avgTime() << vals.getStdDev();
 			ui->runPlot->addPlottable(b);
-			labels.append(QString("%1 @ %2").arg(exp->data.at(unitid)->descriptor->name(),exp->environments.at(envid).label));
+			labels.append(QString("%1 @ %2").arg(exp->data.at(unitid)->descriptor->name(),exp->runs.keys().at(envid)->label));
 			ticks.append(colid++);
 			ui->runPlot->xAxis->setAutoTicks(false);
 			ui->runPlot->xAxis->setAutoTickLabels(false);
@@ -74,14 +82,15 @@ void DataExplorer::updateEnvironment() {
 	for (QCPAbstractPlottable *p : ui->selectMetric->selectedPlottables()) {
 		int unit = p->property("UID").toInt();
         int eid = 0;
-		for (const Experiment::Environment& e : exp->environments) {
-			StatisticalSet vals = e.aggregate(unit,*exp);
+		for (const Environment* e : exp->runs.keys()) {
+			StatisticalSet vals = e->aggregate(unit,exp);
 			QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectEnvironment->xAxis,ui->selectEnvironment->yAxis);
 			b->setData(idx,vals.min(),vals.quantile(0.25),vals.median(),vals.quantile(0.75),vals.max());
             b->setProperty("UID",unit);
             b->setProperty("EID",eid++);
 			ui->selectEnvironment->addPlottable(b);
-			labels.append(QString("%1 @ %2").arg(exp->data.at(unit)->descriptor->name(),e.label));
+			b->setSelected(true);
+			labels.append(QString("%1 @ %2").arg(exp->data.at(unit)->descriptor->name(),e->label));
 			ticks.append(idx++);
 		}
 	}
@@ -100,6 +109,7 @@ void DataExplorer::updateEnvironment() {
 	if (ui->axisFromZero->isChecked())
 		ui->selectEnvironment->yAxis->setRangeLower(0);
 	ui->selectEnvironment->replot();
+	updateDetails();
 }
 
 void DataExplorer::on_runNo_valueChanged(int)
@@ -118,9 +128,9 @@ void DataExplorer::on_runNo_valueChanged(int)
 	on_dispUnit_currentIndexChanged(ui->dispUnit->currentIndex());
 	for (int i : selectedM)
 		ui->selectMetric->plottable(i)->setSelected(true);
+	updateEnvironment();
 	for (int i : selectedE)
 		ui->selectEnvironment->plottable(i)->setSelected(true);
-	updateEnvironment();
 	updateDetails();
 	ui->selectMetric->replot();
 }
@@ -134,12 +144,13 @@ void DataExplorer::on_dispUnit_currentIndexChanged(int)
 	QVector<QString> labels;
 	int i = -1;
 	for (DataSeries* p : exp->data) {
-		++i;
+		if (p == nullptr) continue;
 		if (p->descriptor->unit() != ui->dispUnit->currentText()) continue;
-		StatisticalSet v = exp->aggregate(i,*exp);
+		++i;
+		StatisticalSet v = exp->aggregate(p->descriptor->uid(),exp);
 		QCPStatisticalBox* b = new QCPStatisticalBox(ui->selectMetric->xAxis,ui->selectMetric->yAxis);
 		b->setBrush(boxBrush);
-		b->setProperty("UID",i);
+		b->setProperty("UID",p->descriptor->uid());
 		b->setData(i,v.min(),v.quantile(0.25),v.median(),v.quantile(0.75),v.max());
 		ui->selectMetric->addPlottable(b);
 		ticks.append(i);
@@ -164,12 +175,15 @@ void DataExplorer::on_dispUnit_currentIndexChanged(int)
 
 void DataExplorer::setExperiment(const Experiment *exp) {
 	this->exp = exp;
+	ui->runNo->setMaximum(exp->runs.first().size()-1);
 	if (exp != nullptr) {
 		on_runNo_valueChanged(0);
 
 		for (DataSeries const *p : exp->data) {
-			if (ui->dispUnit->findText(p->descriptor->unit()) == -1)
+			if (p == nullptr) continue;
+			if (ui->dispUnit->findText(p->descriptor->unit()) == -1) {
 				ui->dispUnit->addItem(p->descriptor->unit());
+			}
 		}
 	}
 }
@@ -187,4 +201,53 @@ void DataExplorer::on_detailType_currentIndexChanged(int)
 void DataExplorer::on_pushButton_clicked()
 {
 	emit(removeMe(this));
+}
+
+void DataExplorer::pointInfo(QMouseEvent *event)
+{
+	QCPAbstractPlottable *plottable = ui->runPlot->plottableAt(event->localPos());
+	if (!plottable) return;
+
+	double x = ui->runPlot->xAxis->pixelToCoord(event->localPos().x());
+	QToolTip::hideText();
+
+	QCPGraph *graph = qobject_cast<QCPGraph*>(plottable);
+	if (graph) {
+		double key = 0;
+		double value = 0;
+		bool ok = false;
+		double m = std::numeric_limits<double>::max();
+		for (QCPData data : graph->data()->values()) {
+			double d = qAbs(x - data.key);
+
+			if(d < m) {
+				key = data.key;
+				value = data.value;
+
+				ok = true;
+				m = d;
+			}
+		}
+		if (!ok) return;
+		QToolTip::showText(event->globalPos(),
+			tr("<center><b>%L1</b><br/>%L2 %L3@ %L4s</center>").
+				arg(graph->name().isEmpty() ? "..." : graph->name()).
+				arg(value).arg(graph->property("unit").toString()).
+				arg(key),
+			ui->runPlot, ui->runPlot->rect());
+		return;
+	}
+
+	QCPStatisticalBox *graphBox = qobject_cast<QCPStatisticalBox*>(plottable);
+	if (graphBox) {
+		QToolTip::showText(event->globalPos(),
+			tr("<center><b>%L1</b><br/></center>Max: %2<br/>Upper: %3<br/>Median: %4<br/>Lower: %5<br/>Min: %6<br/>StdDev: %7<br/>Avg: %8<br/>Avg Time: %9").
+				arg(graphBox->name().isEmpty() ? "..." : graphBox->name()).
+				arg(graphBox->maximum()).arg(graphBox->upperQuartile()).arg(graphBox->median()).
+				arg(graphBox->lowerQuartile()).arg(graphBox->minimum()).
+				arg(graphBox->property("StdDev").toDouble()).arg(graphBox->property("avg").toDouble()).
+				arg(graphBox->property("avgTime").toDouble()),
+			ui->runPlot, ui->runPlot->rect());
+	}
+
 }

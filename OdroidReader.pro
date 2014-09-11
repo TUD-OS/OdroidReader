@@ -16,7 +16,6 @@ SOURCES += main.cpp\
     ipvalidator.cpp \
     experiment.cpp \
     qcustomplot.cpp \
-    environmentmodel.cpp \
     environmentdelegate.cpp \
     Data/datadescriptor.cpp \
     Data/datasource.cpp \
@@ -27,13 +26,16 @@ SOURCES += main.cpp\
     ui/tabstyle.cpp \
     Sources/odroidsmartpowersource.cpp \
     devicemonitor.cpp \
-    smartpowermonitor.cpp
+    smartpowermonitor.cpp \
+    environment.cpp \
+    environments.cpp \
+    environmentset.cpp
+    environmentmodel.cpp
 
 HEADERS  += odroidreader.h \
     ipvalidator.h \
     experiment.h \
     qcustomplot.h \
-    environmentmodel.h \
     environmentdelegate.h \
     Data/datadescriptor.h \
     Data/datasource.h \
@@ -44,7 +46,10 @@ HEADERS  += odroidreader.h \
     ui/tabstyle.h \
     Sources/odroidsmartpowersource.h \
     devicemonitor.h \
-    smartpowermonitor.h
+    smartpowermonitor.h \
+    environment.h \
+    environments.h \
+    environmentset.h
 
 FORMS    += odroidreader.ui \
     ui/dataexplorer.ui

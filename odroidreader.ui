@@ -7,14 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>923</width>
-    <height>854</height>
+    <height>865</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>OdroidReader</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1">
+   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0">
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_10">
       <item>
@@ -47,7 +47,7 @@
       <property name="currentIndex">
        <number>0</number>
       </property>
-      <widget class="QWidget" name="sample">
+      <widget class="QWidget" name="sampleTab">
        <attribute name="title">
         <string>Sample</string>
        </attribute>
@@ -64,7 +64,7 @@
            <enum>QTabWidget::West</enum>
           </property>
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <widget class="QWidget" name="tab">
            <attribute name="title">
@@ -162,7 +162,7 @@
                  <string/>
                 </property>
                 <property name="text">
-                 <string>141.76.49.9</string>
+                 <string>192.168.1.1</string>
                 </property>
                </widget>
               </item>
@@ -225,7 +225,7 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QPushButton" name="pushButton_2">
+             <widget class="QPushButton" name="addDevice">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                 <horstretch>0</horstretch>
@@ -236,7 +236,55 @@
                <string>Add</string>
               </property>
               <property name="icon">
-               <iconset theme="list-add"/>
+               <iconset theme="list-add">
+                <normaloff/>
+               </iconset>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <layout class="QHBoxLayout" name="horizontalLayout_17">
+              <property name="leftMargin">
+               <number>10</number>
+              </property>
+              <property name="topMargin">
+               <number>0</number>
+              </property>
+              <item>
+               <widget class="QSlider" name="deviceSI">
+                <property name="minimum">
+                 <number>100</number>
+                </property>
+                <property name="maximum">
+                 <number>10000</number>
+                </property>
+                <property name="singleStep">
+                 <number>10</number>
+                </property>
+                <property name="pageStep">
+                 <number>20</number>
+                </property>
+                <property name="value">
+                 <number>1000</number>
+                </property>
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLCDNumber" name="deviceSIDisplay">
+                <property name="intValue" stdset="0">
+                 <number>1000</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="label_16">
+              <property name="text">
+               <string>Interval (ms):</string>
               </property>
              </widget>
             </item>
@@ -280,6 +328,18 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QPushButton" name="stopSampling">
+            <property name="text">
+             <string>Stop</string>
+            </property>
+            <property name="icon">
+             <iconset theme="media-playback-stop">
+              <normaloff/>
+             </iconset>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
        </layout>
@@ -288,7 +348,7 @@
        <attribute name="title">
         <string>Load</string>
        </attribute>
-       <layout class="QHBoxLayout" name="horizontalLayout_9">
+       <layout class="QVBoxLayout" name="verticalLayout_8">
         <item>
          <widget class="QPushButton" name="loadData">
           <property name="sizePolicy">
@@ -307,6 +367,13 @@
           </property>
          </widget>
         </item>
+        <item>
+         <widget class="QProgressBar" name="loadProgress">
+          <property name="value">
+           <number>0</number>
+          </property>
+         </widget>
+        </item>
        </layout>
       </widget>
      </widget>
@@ -320,7 +387,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="overview">
        <attribute name="title">
@@ -453,41 +520,51 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_7">
              <item>
-              <widget class="QGroupBox" name="groupBox_2">
+              <widget class="QGroupBox" name="groupBox_3">
                <property name="title">
                 <string>Environments</string>
                </property>
-               <property name="checkable">
-                <bool>false</bool>
-               </property>
-               <layout class="QHBoxLayout" name="horizontalLayout_16">
+               <layout class="QVBoxLayout" name="verticalLayout_12">
                 <item>
-                 <widget class="QTableView" name="environment">
-                  <property name="editTriggers">
-                   <set>QAbstractItemView::AllEditTriggers</set>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <layout class="QVBoxLayout" name="verticalLayout_6">
+                 <layout class="QHBoxLayout" name="horizontalLayout_9">
                   <item>
-                   <widget class="QPushButton" name="envAdd">
-                    <property name="text">
-                     <string>Add</string>
+                   <widget class="QComboBox" name="availEnvs">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
                     </property>
                    </widget>
                   </item>
                   <item>
-                   <widget class="QPushButton" name="envRemove">
-                    <property name="enabled">
-                     <bool>false</bool>
-                    </property>
+                   <widget class="QPushButton" name="addEnvironment">
                     <property name="text">
-                     <string>Remove</string>
+                     <string/>
+                    </property>
+                    <property name="icon">
+                     <iconset theme="list-add">
+                      <normaloff/>
+                     </iconset>
                     </property>
                    </widget>
                   </item>
                  </layout>
+                </item>
+                <item>
+                 <widget class="QListWidget" name="expEnvs"/>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="pushButton_2">
+                  <property name="text">
+                   <string/>
+                  </property>
+                  <property name="icon">
+                   <iconset theme="list-remove">
+                    <normaloff/>
+                   </iconset>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </widget>
@@ -582,21 +659,13 @@
             <layout class="QHBoxLayout" name="horizontalLayout_8">
              <item>
               <widget class="QPushButton" name="addExperiment">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
                <property name="text">
                 <string>Add</string>
                </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QPushButton" name="updateExperiment">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="text">
-                <string>Update</string>
+               <property name="icon">
+                <iconset theme="list-add">
+                 <normaloff/>
+                </iconset>
                </property>
               </widget>
              </item>
@@ -607,6 +676,11 @@
                </property>
                <property name="text">
                 <string>Remove</string>
+               </property>
+               <property name="icon">
+                <iconset theme="list-remove">
+                 <normaloff/>
+                </iconset>
                </property>
               </widget>
              </item>
@@ -638,6 +712,39 @@
            </widget>
           </item>
          </layout>
+        </item>
+        <item>
+         <widget class="QProgressBar" name="totalProgress">
+          <property name="value">
+           <number>24</number>
+          </property>
+          <property name="textVisible">
+           <bool>true</bool>
+          </property>
+          <property name="format">
+           <string>Total: %p%</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QProgressBar" name="experimentProgress">
+          <property name="value">
+           <number>24</number>
+          </property>
+          <property name="format">
+           <string>Experiment: %p%</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QProgressBar" name="environmentProgress">
+          <property name="value">
+           <number>24</number>
+          </property>
+          <property name="format">
+           <string>Environment: %p%</string>
+          </property>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -698,7 +805,7 @@
                <x>0</x>
                <y>0</y>
                <width>891</width>
-               <height>461</height>
+               <height>535</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_7"/>
@@ -706,6 +813,142 @@
            </widget>
           </item>
          </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="environments">
+       <attribute name="title">
+        <string>Environment Sets</string>
+       </attribute>
+       <layout class="QHBoxLayout" name="horizontalLayout_16">
+        <item>
+         <widget class="QGroupBox" name="groupBox_2">
+          <property name="title">
+           <string>Environments</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_10">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_12">
+             <item>
+              <widget class="QPushButton" name="envAdd">
+               <property name="text">
+                <string>Add</string>
+               </property>
+               <property name="icon">
+                <iconset theme="list-add">
+                 <normaloff/>
+                </iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="envRemove">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>Remove</string>
+               </property>
+               <property name="icon">
+                <iconset theme="list-remove">
+                 <normaloff/>
+                </iconset>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QTableView" name="environment">
+             <property name="editTriggers">
+              <set>QAbstractItemView::AnyKeyPressed|QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+             </property>
+             <property name="selectionMode">
+              <enum>QAbstractItemView::MultiSelection</enum>
+             </property>
+             <property name="selectionBehavior">
+              <enum>QAbstractItemView::SelectRows</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="groupBox_4">
+          <property name="title">
+           <string>Sets</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_6">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_14">
+             <item>
+              <widget class="QLabel" name="label_15">
+               <property name="text">
+                <string>Title</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="setTitle"/>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_15">
+             <item>
+              <widget class="QPushButton" name="envSetAdd">
+               <property name="text">
+                <string>Add</string>
+               </property>
+               <property name="icon">
+                <iconset theme="list-add">
+                 <normaloff/>
+                </iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="envSetRemove">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>Remove</string>
+               </property>
+               <property name="icon">
+                <iconset theme="list-remove">
+                 <normaloff/>
+                </iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="envSetUpdate">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>Update</string>
+               </property>
+               <property name="icon">
+                <iconset theme="view-refresh">
+                 <normaloff/>
+                </iconset>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QListWidget" name="envSets">
+             <property name="selectionRectVisible">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </item>
        </layout>
       </widget>
@@ -789,6 +1032,22 @@
     <hint type="destinationlabel">
      <x>370</x>
      <y>155</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>deviceSI</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>deviceSIDisplay</receiver>
+   <slot>display(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>252</x>
+     <y>161</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>403</x>
+     <y>161</y>
     </hint>
    </hints>
   </connection>

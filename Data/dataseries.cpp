@@ -2,6 +2,7 @@
 #include <limits>
 #include <cassert>
 #include <QDebug>
+#include <QJsonArray>
 
 DataSeries::DataSeries(const DataDescriptor *desc, QObject *parent)
 	: QObject(parent), descriptor(desc),
@@ -18,6 +19,17 @@ DataSeries::DataSeries(const DataSeries &src) : QObject(src.parent()), descripto
 	_avg = src._avg;
 }
 
+void DataSeries::clear() {
+	_min = std::numeric_limits<double>::max();
+	_max = std::numeric_limits<double>::min();
+	_avg = 0;
+	timestamps.clear();
+	values.clear();
+	emit newAvg(0);
+	emit newMax(_max);
+	emit newMin(_min);
+}
+
 DataSeries::DataSeries(const DataSeries &src, double from, double to, bool timeAdjust) :
 	descriptor(src.descriptor)
 {
@@ -29,12 +41,14 @@ DataSeries::DataSeries(const DataSeries &src, double from, double to, bool timeA
 			ctr++;
 		}
 	}
-	qDebug() << "Copied " << ctr << "values [" << from << "-" << to << "] of" << src.timestamps.size();
+	//qDebug() << "Copied " << ctr << "values [" << from << "-" << to << "] of" << src.timestamps.size();
 }
 
 //TODO: requires values to be added in time order
 void DataSeries::addValue(double time, double value, bool scale) {
-	assert(timestamps.size() == 0 || time >= timestamps.last()); //If this is not true we have to recalculate avg :(
+	if (timestamps.size() > 0 && time < timestamps.last())  {//qDebug() << time << "vs." << timestamps.last();
+		qWarning() << time << timestamps.last();
+	}
 	if (scale) value *= descriptor->factor();
 	//qDebug() << descriptor->str() << ": Adding " << value << "at time" << time;
 	if (value < _min) {
@@ -47,10 +61,13 @@ void DataSeries::addValue(double time, double value, bool scale) {
 	}
 	double _oldavg = _avg;
 	if (values.size() > 0) {
-		double t = time - timestamps.last();
-		double v1 = values.last();
-		double avgval = v1*t+(value-v1)*t/2;
-		_avg += (avgval-_avg)/values.size();
+		//double t = time - timestamps.last();
+		//double v1 = values.last();
+		double avgval = value; //v1*t+(value-v1)*t/2;
+		_avg += (avgval-_avg)/(values.size()+1);
+		//qWarning() << _avg << avgval;
+	} else {
+		_avg = value;
 	}
 	values.append(value);
 	timestamps.append(time);
@@ -59,4 +76,23 @@ void DataSeries::addValue(double time, double value, bool scale) {
 	}
 	emit newValue(time,value);
 	emit valuesUpdated(timestamps,values);
+}
+
+QJsonObject DataSeries::json() const {
+	QJsonArray vals, times;
+	for (double value : values)
+		vals.push_back(value);
+	for (double time : timestamps)
+		times.push_back(time);
+	QJsonObject jo;
+	jo["values"] = vals;
+	jo["timestamps"] = times;
+	return jo;
+}
+
+void DataSeries::fromJson(const QJsonObject &jo) {
+	QJsonArray times = jo["timestamps"].toArray();
+	QJsonArray vals = jo["values"].toArray();
+	for (int i = 0; i < times.size(); i++)
+		addValue(times.at(i).toDouble(),vals.at(i).toDouble(),false);
 }

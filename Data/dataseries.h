@@ -4,6 +4,7 @@
 #include <Data/datadescriptor.h>
 #include <QObject>
 #include <QVector>
+#include <QJsonObject>
 #include <QPair>
 
 class DataSeries : public QObject
@@ -21,11 +22,15 @@ public:
 	DataSeries(const DataSeries& src, double from, double to, bool timeAdjust = true);
 	DataSeries(const DataSeries&);
 	void addValue(double time, double value, bool scale = true);
+	void clear();
 	const QVector<double>& getTimestamps() { return timestamps; }
 	const QVector<double>& getValues() { return values; }
 	double getAvg() const { return _avg; }
 	double getMin() const { return _min; }
 	double getMax() const { return _max; }
+	void fromJson(const QJsonObject& jo);
+	QJsonObject json() const;
+    double getLast() const { return (values.size()==0)?NAN:values.last(); }
 signals:
 	void newMax(double max);
 	void newMin(double min);

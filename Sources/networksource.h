@@ -9,6 +9,7 @@ class NetworkSource : public DataSource
 {
 	Q_OBJECT
 private:
+    QVector<const DataDescriptor*> descs;
 	typedef enum class {
 		DESC = 0,
 		GET = 1,
@@ -24,14 +25,14 @@ private:
 	qint64 packetSize;
 	qint64 recon_ctr;
 	bool started, _running, reconnect;
-	double lastTime;
+    double lastTime;
 public:
 	NetworkSource(QString name, QString address, quint16 port, int interval, QObject *parent = nullptr);
 	virtual ~NetworkSource();
     virtual bool isRunning() const { return _running; }
 	inline virtual bool canExecute() const { return true; }
 	virtual void execute(QString exec);
-	virtual void setupEnvironment(const Experiment::Environment &env);
+	virtual void setupEnvironment(const Environment *env) override;
 	inline const QString& address() { return _address; }
 	inline quint16 port() { return _port; }
     inline virtual QString descriptor() { return QString("[Net] %1 @ %2:%3").arg(_name,_address,QString::number(_port)); }
@@ -47,6 +48,7 @@ public slots:
 	void readData();
 protected:
 	virtual void start();
+    virtual void stop();
 };
 
 #endif // NETWORKSOURCE_H

@@ -3,18 +3,22 @@
 
 #include <QString>
 #include <QObject>
+#include <QMap>
 #include <QVector>
-#include <experiment.h>
 #include <Data/datadescriptor.h>
+#include "environment.h"
 
 Q_DECLARE_METATYPE(QVector<const DataDescriptor*>)
 
 class DataSource : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
+    static double localStart;
 protected:
-	QString _name;
-	QVector<const DataDescriptor*> descs;
+    static QMap<const DataSource*,double> offsets;
+    QString _name;
+    double getGlobalTime(double time);
+
 public:
 	DataSource(QString names, QObject* parent = nullptr);
 	DataSource(const DataSource&) = delete;
@@ -24,9 +28,10 @@ public:
 	virtual bool canExecute() const = 0;
 	virtual void execute(QString exec);
     virtual bool isRunning() const = 0;
-	virtual void setupEnvironment(const Experiment::Environment& env);
+	virtual void setupEnvironment(const Environment* env);
 public slots:
 	virtual void start() = 0;
+    virtual void stop() = 0;
 
 signals:
 	void dataReceived(QString source);

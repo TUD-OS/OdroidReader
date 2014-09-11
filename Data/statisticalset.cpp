@@ -1,16 +1,44 @@
 #include "Data/statisticalset.h"
 
 #include <algorithm>
-
-StatisticalSet::StatisticalSet(const DataDescriptor* ds) : descriptor(ds)
+#include <QDebug>
+StatisticalSet::StatisticalSet(const DataDescriptor* ds) : descriptor(ds), haveStdDev(false), _avg(0), _timeAvg(0), timeCnt(0)
 {}
 
 void StatisticalSet::addValue(double value) {
+	haveStdDev = false;
 	auto low = std::lower_bound(_sorted.begin(),_sorted.end(),value);
+	double _oldavg = _avg;
+	if (_sorted.size() > 0) {
+		double avgval = value;
+		_avg += (avgval-_avg)/(_sorted.size()+1);
+	} else {
+		_avg = value;
+	}
 	_sorted.insert(low,value);
 }
 
+void StatisticalSet::addTime(double t) {
+	_timeAvg += (t-_timeAvg)/(++timeCnt);
+}
+
+#define square(i) ((i)*(i))
+
+double StatisticalSet::getStdDev() {
+	if (haveStdDev) return _stddev;
+	double i = 0;
+	for (double v : _sorted) {
+		_stddev = (square(i)/square(i+1))*_stddev+(square(_avg-v)/square(i+1));
+		i++;
+	}
+	_stddev = sqrt(_stddev);
+	haveStdDev = true;
+	return _stddev;
+}
+
+
 void StatisticalSet::extend(const StatisticalSet& s) {
+	haveStdDev = false;
 	for (double val : s._sorted) {
 		addValue(val);
 	}
