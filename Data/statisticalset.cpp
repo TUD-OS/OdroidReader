@@ -2,13 +2,12 @@
 
 #include <algorithm>
 #include <QDebug>
-StatisticalSet::StatisticalSet(const DataDescriptor* ds) : descriptor(ds), haveStdDev(false), _avg(0), _timeAvg(0), timeCnt(0)
+StatisticalSet::StatisticalSet(const DataDescriptor* ds) : descriptor(ds), _avg(0), haveStdDev(false), _timeAvg(0), timeCnt(0)
 {}
 
 void StatisticalSet::addValue(double value) {
 	haveStdDev = false;
 	auto low = std::lower_bound(_sorted.begin(),_sorted.end(),value);
-	double _oldavg = _avg;
 	if (_sorted.size() > 0) {
 		double avgval = value;
 		_avg += (avgval-_avg)/(_sorted.size()+1);

@@ -14,7 +14,7 @@ Experiment::Experiment(const QJsonObject &jo, const QVector<DataSeries *> &descs
 	for (QJsonValueRef o : jo["environment_sets"].toArray()) {
 		EnvironmentSet* s = envs.findSet(o.toString());
 		if (s == nullptr) {
-			qWarning() << "Unknown environment set for Experiment " << title << 'Broken file?';
+			qWarning() << "Unknown environment set for Experiment " << title << "Broken file?";
 		} else {
 			envSets.append(envs.findSet(o.toString()));
 		}
